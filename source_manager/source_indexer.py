@@ -3,13 +3,15 @@ import logging
 import os
 import re
 
-from ..models.indexer import IndexedFile, SourceFile, IndexedItem, Source, Indexed, Index, Indices, Printable, SourceComponentContainer
-from ..utils import find_dirs, merge, LOG_CONSTANTS
+
+from ..models.indexer import Index, Indexed, Indices, Printable
+
+from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer
+from ..utils.utils import find_dirs, merge, LOG_CONSTANTS
 
 
 
 
-# @pretty_print
 class SourceIndexerBase:
 
     CALLER_DIR = None

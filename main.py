@@ -1,8 +1,6 @@
-from . import source_indexer
-from .source_indexer import SourceIndexer
 import inspect
 import logging, os
-
+from .source_manager.source_indexer import SourceIndexer
 _init_config = {
 
     'caller_path' : None

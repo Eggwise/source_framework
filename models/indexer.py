@@ -228,7 +228,7 @@ class Indexed(Printable, SourceComponentContainer):
                 unpacked = cls._unpack(s.components, unpacked)
                 continue
 
-            error_message = 'indexed tried to unpack non source component {0}'.format(s)
+            error_message = 'Indexed tried to unpack non source component {0}'.format(s)
             logging.error(error_message)
             raise Exception(error_message)
 
@@ -278,6 +278,7 @@ class Indexed(Printable, SourceComponentContainer):
     def __getattr__(self, item):
         logging.debug('get attribute from indexed items, applying get attr {0} to all scoped components'.format(item))
         return_val = Indexed(self.scoped).map(lambda x: getattr(x, item))
+        # self.map(lambda x: getattr(x, item))
         return return_val
 
     def __len__(self):

@@ -3,12 +3,26 @@ import logging, copy
 from ..utils.utils import LOG_CONSTANTS
 
 from .indexer import Printable, Matchable, Unique
-from ..source_manager.source_manager import FileManager
+
 
 # import sample
 # from ..indexer import  Printable, Matchable, Unique, Index
 # from source_framework.models.indexer import Printable, Matchable, Unique, Index
 # indexer.Printable
+
+
+
+
+class Container():
+
+    @property
+    def components(self):
+        raise NotImplementedError
+
+    @property
+    def copy(self):
+        raise NotImplementedError
+
 
 class SourceComponent(Printable, Matchable, Unique):
 
@@ -56,7 +70,6 @@ class SourceComponent(Printable, Matchable, Unique):
     @classmethod
     def from_path(cls, path, index = None):
 
-
         path = os.path.realpath(path)
 
         if index is not None:
@@ -70,7 +83,9 @@ class SourceComponent(Printable, Matchable, Unique):
             return Folder(name, path)
 
 
-
+    @property
+    def exists(self):
+        return os.path.exists(self.path)
 
 class SourceComponentContainer():
 
@@ -231,18 +246,18 @@ class Folder(SourceComponent):
 
     @property
     def items(self):
-        return [(i, os.path.join(self.path, i)) for i in os.listdir(self.path) if not i.startswith('.')]
+        return [SourceComponent.from_path(os.path.join(self.path, i)) for i in os.listdir(self.path) if not i.startswith('.')]
 
     @property
     def files(self):
-        return list(filter(lambda x: not os.path.isdir(x[1]), self.items))
+        return list(filter(lambda x: not os.path.isdir(x.path), self.items))
 
     @property
     def dirs(self):
-        return list(filter(lambda x: os.path.isdir(x[1]), self.items))
+        return list(filter(lambda x: os.path.isdir(x.path), self.items))
 
     def __getattr__(self, name):
-        items_starting_with = [i for i in self.items if i[0].startswith(name)]
+        items_starting_with = [i for i in self.items if i.name.startswith(name)]
 
         if len(items_starting_with) > 1:
             raise Exception('multiple items with same name')
@@ -252,10 +267,7 @@ class Folder(SourceComponent):
         match_item = items_starting_with[0]
         logging.info('get item: {0}'.format(match_item))
 
-        if os.path.isfile(match_item[1]):
-            return SourceFile.from_path(match_item[1])
-        else:
-            return Folder.from_path(match_item[1])
+        return match_item
 
     def join(self, mutable=False, *path):
         new_folder = Folder.from_path(os.path.join(self.path, *path))
@@ -267,17 +279,17 @@ class Folder(SourceComponent):
             return new_folder
 
     def get_folder(self, name):
-        items_starting_with = [i for i in self.dirs if i[0].startswith(name)]
+        items_starting_with = [i for i in self.dirs if i.name.startswith(name)]
         if len(items_starting_with) > 1:
             raise Exception('Error getting folder, multiple items with same name')
         if len(items_starting_with) == 0:
             raise AttributeError('no items with found with name {0}'.format(name))
 
         match_item = items_starting_with[0]
-        return Folder.from_path(match_item[1])
+        return match_item
 
     def get_file(self, name):
-        items_starting_with = [i for i in self.files if i[0].startswith(name)]
+        items_starting_with = [i for i in self.dirs if i.name.startswith(name)]
 
         if len(items_starting_with) > 1:
             raise Exception('multiple items with same name')
@@ -285,7 +297,7 @@ class Folder(SourceComponent):
             raise AttributeError('no items with found with name {0}\nAt path: {1}\nFiles available: {2}'.format(name, self.path, self.files))
 
         match_item = items_starting_with[0]
-        return SourceFile.from_path(match_item[1])
+        return match_item
 
     @property
     def children(self):
@@ -331,15 +343,6 @@ class SourceFile(SourceComponent):
         else:
             self._source = source
 
-    @classmethod
-    def from_path(cls, path, index = None):
-
-        if index is not None:
-            name = cls.extract_name(path)
-        else:
-            name = os.path.basename(path)
-        return cls(name=name, path=path)
-
 
     @classmethod
     def _load_source(cls, path: str):
@@ -352,7 +355,8 @@ class SourceFile(SourceComponent):
         return Folder.from_path(os.path.realpath(os.path.dirname(self.path)))
 
     @property
-    def do(self) -> FileManager:
+    def do(self):
+        from ..source_manager.source_manager import FileManager
         return FileManager(self)
 
     @property
@@ -480,6 +484,9 @@ class IndexedItem(SourceComponent):
     @property
     def filename(self):
         return os.path.basename(self.indexed_file.path)
+
+
+
 
 
 

@@ -3,6 +3,8 @@ import importlib.util
 import logging
 import os
 
+from ..models.components import SourceFile, Folder
+
 
 class SourceManagerBase():
     DEFAULT_FILENAME = '{name}.{h}_{m}_{s}.{extension}'
@@ -15,8 +17,9 @@ class SourceManagerBase():
                 warn_message = 'write to path overiddes the folder & name parameter!'
                 logging.warning(warn_message)
 
-        else:
+            folder = Folder.from_path(path)
 
+        else:
             if name is None:
                 #take current filename
                 now = datetime.datetime.now()
@@ -31,22 +34,25 @@ class SourceManagerBase():
                 name = cls.DEFAULT_FILENAME.format(**name_format_args)
 
             if folder is None:
-                folder = source_component.folder
+                folder = source_component.folder # type: Folder
 
-            path = folder.join(name)
+            folder.join(True, name)
+
 
 
         #TODO more checks for existence of folder etc
 
-        if os.path.exists(path) and not override:
+        if folder.exists and not override:
             error_message = 'trying to write to existing path, {0} \n if you whish to override use the override parameter.'.format(path)
             logging.error(error_message)
             raise Exception(error_message)
 
-        with open(path, 'w') as output_file:
+        with open(folder.path, 'w') as output_file:
             output = source_component.source
             output_file.write(output)
-            return path
+            return folder.path
+
+
 
 
 
@@ -74,6 +80,15 @@ class FileManager(SourceManagerBase):
 
 
     def write_to(self, folder=None, name=None, path=None, override=False):
-        return self._write_to(self.file, folder, name, path, override)
+
+        if callable(name):
+            name = name(self)
+        if callable(path):
+            path = path(self)
+        if callable(folder):
+            folder = folder(self)
+
+        written_path = self._write_to(self.file, folder, name, path, override)
+        return SourceFile.from_path(written_path)
 
 

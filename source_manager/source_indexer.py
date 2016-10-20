@@ -3,7 +3,7 @@ import logging
 import os
 import re
 
-from framework.models.indexer import IndexedFile, SourceFile, IndexedItem, Source, Indexed, Index, Indices, Printable, SourceComponentContainer
+from ..models.indexer import IndexedFile, SourceFile, IndexedItem, Source, Indexed, Index, Indices, Printable, SourceComponentContainer
 from ..utils import find_dirs, merge, LOG_CONSTANTS
 
 

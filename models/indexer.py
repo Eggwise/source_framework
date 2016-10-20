@@ -1,9 +1,9 @@
 import jinja2, yaml, os, re, json
 from typing import List
 import logging, copy
-from framework.utils import LOG_CONSTANTS
+from ..utils import LOG_CONSTANTS
 
-from framework.source_manager.source_manager import FileManager
+from ..source_manager.source_manager import FileManager
 
 
 

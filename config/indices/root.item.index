@@ -1,0 +1,10 @@
+parse_tags:
+  ws: "[ |\\t]"
+  word: "[a-z.A-Z_]+"
+  comment: "[#|//]"
+  end_default: "\\s+"
+
+#this is the standard identifier used when not overidden in the child index config
+#this identifier matches 1 or more whitespaces
+identifier:
+  end_tag: "{ws}+"

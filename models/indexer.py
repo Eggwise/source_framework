@@ -17,7 +17,6 @@ class Matchable():
 
     def match(self, query):
 
-
         if isinstance(self, Index):
             return self.name == query or self.index_type == query
 

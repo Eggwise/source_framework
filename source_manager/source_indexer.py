@@ -40,18 +40,7 @@ class SourceIndexerBase:
         'root_config_name': 'root.config',
     }
 
-    @staticmethod
-    def extract_name(path, identifier):
-        path = os.path.realpath(path)
-        extract_regex = '(?P<name>.*){0}'.format(identifier)
-        parent, filename = os.path.split(path)
-        name_match = re.match(extract_regex, filename)
 
-        assert name_match is not None
-        assert 'name' in name_match.groupdict()
-        assert name_match.groupdict()['name']
-
-        return name_match.groupdict()['name']
 
     @classmethod
     def _get_root_config_path(cls):
@@ -83,7 +72,9 @@ class SourceIndexerBase:
         root_config_path = cls._get_root_config_path()
         #extract the name from the root config
         #using the hardcoded index described in the config attribute of the class
-        root_config_name = cls.extract_name(root_config_path, cls.config['config']['identifier'])
+
+
+        root_config_name = SourceFile.extract_name(root_config_path, cls.config['config']['identifier'])
 
         #if ever this assertion fails... something is terribly wrong
         assert root_config_name == 'root'

@@ -3,7 +3,7 @@ import logging, copy
 from ..utils.utils import LOG_CONSTANTS
 
 from .indexer import Printable, Matchable, Unique
-
+from ..source_manager.source_manager import FileManager
 
 # import sample
 # from ..indexer import  Printable, Matchable, Unique, Index
@@ -25,9 +25,49 @@ class SourceComponent(Printable, Matchable, Unique):
     def path(self, path):
         self._path = path
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
     def is_at(self, other_component):
         #folder must overide this
         return self.path == other_component.path
+
+
+    @staticmethod
+    def extract_name(path, identifier):
+        path = os.path.realpath(path)
+        extract_regex = '(?P<name>.*){0}'.format(identifier)
+        parent, filename = os.path.split(path)
+        name_match = re.match(extract_regex, filename)
+
+        assert name_match is not None
+        assert 'name' in name_match.groupdict()
+        assert name_match.groupdict()['name']
+
+        return name_match.groupdict()['name']
+
+
+
+    @classmethod
+    def from_path(cls, path, index = None):
+
+
+        path = os.path.realpath(path)
+
+        if index is not None:
+            name = cls.extract_name(path)
+        else:
+            name = os.path.basename(path)
+
+        if os.path.isfile(path):
+            return SourceFile(name, path)
+        else:
+            return Folder(name, path)
 
 
 
@@ -178,6 +218,108 @@ class Source(str, Printable):
 
 
 
+
+#TODO WIP
+class Folder(SourceComponent):
+
+    def __init__(self, name: str, path: str):
+        self.name = name
+        self.path = os.path.realpath(path)
+        if os.path.isfile(self.path):
+            raise Exception('trying to create folder folder using file path: {0}'.format(self.path))
+
+
+    @property
+    def items(self):
+        return [(i, os.path.join(self.path, i)) for i in os.listdir(self.path) if not i.startswith('.')]
+
+    @property
+    def files(self):
+        return list(filter(lambda x: not os.path.isdir(x[1]), self.items))
+
+    @property
+    def dirs(self):
+        return list(filter(lambda x: os.path.isdir(x[1]), self.items))
+
+    def __getattr__(self, name):
+        items_starting_with = [i for i in self.items if i[0].startswith(name)]
+
+        if len(items_starting_with) > 1:
+            raise Exception('multiple items with same name')
+        if len(items_starting_with) == 0:
+            raise AttributeError('no items with found with name {0} at path: {1}'.format(name, self.path))
+
+        match_item = items_starting_with[0]
+        logging.info('get item: {0}'.format(match_item))
+
+        if os.path.isfile(match_item[1]):
+            return SourceFile.from_path(match_item[1])
+        else:
+            return Folder.from_path(match_item[1])
+
+    def join(self, mutable=False, *path):
+        new_folder = Folder.from_path(os.path.join(self.path, *path))
+
+        if mutable:
+            self.path = new_folder.path
+            return self
+        else:
+            return new_folder
+
+    def get_folder(self, name):
+        items_starting_with = [i for i in self.dirs if i[0].startswith(name)]
+        if len(items_starting_with) > 1:
+            raise Exception('Error getting folder, multiple items with same name')
+        if len(items_starting_with) == 0:
+            raise AttributeError('no items with found with name {0}'.format(name))
+
+        match_item = items_starting_with[0]
+        return Folder.from_path(match_item[1])
+
+    def get_file(self, name):
+        items_starting_with = [i for i in self.files if i[0].startswith(name)]
+
+        if len(items_starting_with) > 1:
+            raise Exception('multiple items with same name')
+        if len(items_starting_with) == 0:
+            raise AttributeError('no items with found with name {0}\nAt path: {1}\nFiles available: {2}'.format(name, self.path, self.files))
+
+        match_item = items_starting_with[0]
+        return SourceFile.from_path(match_item[1])
+
+    @property
+    def children(self):
+        return [Folder.from_path(i[1]) for i in self.dirs]
+
+    @property
+    def parent(self):
+        parent_path, current = os.path.split(self.path)
+        return Folder.from_path(parent_path)
+
+
+
+    def has_dir(self, name):
+        try:
+            self.get_folder(name)
+            return True
+        except AttributeError:
+            return False
+
+    def has_file(self, name):
+        try:
+            self.get_file(name)
+            return True
+        except AttributeError:
+            return False
+
+    def __repr__(self):
+        try:
+            return '[Folder: >> {0} <<, {1} items]'.format(os.path.basename(self.name), len(self.items))
+        except FileNotFoundError:
+            return '[Virtual folder >> {0} << at {1}]'.format(os.path.basename(self.name), self.path)
+
+
+
 class SourceFile(SourceComponent):
 
 
@@ -189,6 +331,15 @@ class SourceFile(SourceComponent):
         else:
             self._source = source
 
+    @classmethod
+    def from_path(cls, path, index = None):
+
+        if index is not None:
+            name = cls.extract_name(path)
+        else:
+            name = os.path.basename(path)
+        return cls(name=name, path=path)
+
 
     @classmethod
     def _load_source(cls, path: str):
@@ -197,26 +348,27 @@ class SourceFile(SourceComponent):
             return source
 
     @property
-    def folder(self):
-        #TODO TEST
-        return os.path.realpath(self.dirname)
+    def folder(self) -> Folder:
+        return Folder.from_path(os.path.realpath(os.path.dirname(self.path)))
 
     @property
-    def extension(self):
+    def do(self) -> FileManager:
+        return FileManager(self)
+
+    @property
+    def extension(self) -> str:
         #TODO TEST
         return self.filename.split('.')[-1]
 
-    @property
-    def dirname(self):
-        return os.path.dirname(self.path)
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         return os.path.basename(self.path)
 
     @property
-    def source(self):
+    def source(self) -> Source:
         return Source(self._source)
+
 
 
     # @property
@@ -246,89 +398,6 @@ class SourceFile(SourceComponent):
 
 
 
-#TODO WIP
-class Folder():
-    def __init__(self, path):
-        self.path = os.path.realpath(path)
-        if os.path.isfile(path):
-            raise Exception('trying to get folder using filename')
-        self.items = [(i, os.path.join(path, i)) for i in os.listdir(path) if not i.startswith('.')]
-
-
-    @property
-    def files(self):
-        return list(filter(lambda x: not os.path.isdir(x[1]), self.items))
-
-    @property
-    def dirs(self):
-        return list(filter(lambda x: os.path.isdir(x[1]), self.items))
-
-    def __getattr__(self, name):
-        items_starting_with = [i for i in self.items if i[0].startswith(name)]
-
-        if len(items_starting_with) > 1:
-            raise Exception('multiple items with same name')
-        if len(items_starting_with) == 0:
-            raise AttributeError('no items with found with name {0} at path: {1}'.format(name, self.path))
-
-        match_item = items_starting_with[0]
-        logging.info('get item: {0}'.format(match_item))
-
-        if os.path.isfile(match_item[1]):
-            return SourceFile.from_path(match_item[1])
-        else:
-            return Folder(match_item[1])
-
-
-    def get_folder(self, name):
-        items_starting_with = [i for i in self.dirs if i[0].startswith(name)]
-        if len(items_starting_with) > 1:
-            raise Exception('multiple items with same name')
-        if len(items_starting_with) == 0:
-            raise AttributeError('no items with found with name {0}'.format(name))
-
-        match_item = items_starting_with[0]
-        return Folder(match_item[1])
-
-    def get_file(self, name):
-        items_starting_with = [i for i in self.files if i[0].startswith(name)]
-
-        if len(items_starting_with) > 1:
-            raise Exception('multiple items with same name')
-        if len(items_starting_with) == 0:
-            raise AttributeError('no items with found with name {0}'.format(name))
-
-        match_item = items_starting_with[0]
-        return SourceFile.from_path(match_item[1])
-
-    @property
-    def children(self):
-        return [Folder(i[1]) for i in self.dirs]
-
-    @property
-    def parent(self):
-        parent_path, current = os.path.split(self.path)
-        return Folder(parent_path)
-
-
-    def has_dir(self, name):
-        try:
-            self.get_folder(name)
-            return True
-        except AttributeError:
-            return False
-
-    def has_file(self, name):
-        try:
-            self.get_file(name)
-            return True
-        except AttributeError:
-            return False
-
-    def __repr__(self):
-        return '[dir: >> {0} <<, {1} items]'.format(os.path.basename(self.path), len(self.items))
-
-
 from .indexer import Index
 class IndexedFile(SourceFile, SourceComponent):
 
@@ -355,7 +424,17 @@ class IndexedFile(SourceFile, SourceComponent):
         return 'indexed file: {2} >>> {0} <<< \t{1}'.format(self.name, self.path, self.index.name)
 
 
+    @classmethod
+    def from_path(cls, path, index=None):
+        if index is None:
+            err_msg = 'Trying to create indexed file from path without provicing the index'
+            raise Exception(err_msg)
+        name = cls.extract_name(path)
+        return cls(name=name, path=path, index=index)
 
+    @classmethod
+    def from_source_file(cls, file: SourceFile, index):
+        return cls(file.name, file.path, index)
 
 
 class IndexedItem(SourceComponent):

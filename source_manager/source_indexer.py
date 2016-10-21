@@ -237,10 +237,9 @@ class SourceIndexerBase:
             # order them by type
             # indices_by_type[identifiers_with_types[identifier]] = paths
             for p in paths:
-                indexed_file_name = cls.extract_name(p, identifier)
                 index = identifiers_with_indices[identifier]
                 assert isinstance(index, Index)
-                indexed_index_file = IndexedFile(indexed_file_name, p, index)
+                indexed_index_file = IndexedFile.from_path(path=p, index=index)
                 files.append(indexed_index_file)
 
         return Indexed(files)
@@ -443,7 +442,13 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
 
         logging.info(LOG_CONSTANTS.REGION.format('INDEXING ALL SOURCE'))
         # self.indices.refresh()
-        item_indices = self.indices.item.ok
+        try:
+            item_indices = self.indices.item.ok
+        except AttributeError as e:
+            logging.info('Tried retrieving item indices but none where available.')
+            logging.info('Exception, thrown: {0}'.format(e))
+            item_indices = None
+
         file_indices = self.indices.file.ok
 
         file_indices.log()
@@ -453,9 +458,10 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
 
         #TODO
         all_indexed_items = []
-        for file in all_indexed_files:
-            indexed_items = self._extract_items(file, item_indices)
-            all_indexed_items.extend(indexed_items)
+        if item_indices is not None:
+            for file in all_indexed_files:
+                indexed_items = self._extract_items(file, item_indices)
+                all_indexed_items.extend(indexed_items)
 
         all_indexed = Indexed(all_indexed_items, all_indexed_files)
         logging.info(LOG_CONSTANTS.REGION.format('INDEXING END'))

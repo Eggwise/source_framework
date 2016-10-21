@@ -32,23 +32,24 @@ def init():
 
 
 
+
 def _check_initialized():
     global _init_config
     global _source_indexer
-    if _init_config['caller_path'] is not None:
+    if _init_config['caller_path'] is None:
         error_message = 'source manager is not initialized. call init() first'
         logging.error(error_message)
         raise Exception(error_message)
 
     if _source_indexer is None:
-        error_message = 'something went wrong when initializing the source manager'
+        error_message = 'something went wrong when initializing the source manager. did you call init()?'
         logging.error(error_message)
         raise Exception(error_message)
 
 
 def find():
-    global _source_indexer
     _check_initialized()
+    global _source_indexer
     return _source_indexer
 
 

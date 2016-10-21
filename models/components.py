@@ -437,12 +437,11 @@ class IndexedFile(SourceFile, SourceComponent):
 
 
     @classmethod
-    def from_path(cls, path, index=None):
-        if index is None:
-            err_msg = 'Trying to create indexed file from path without provicing the index'
-            raise Exception(err_msg)
-        name = cls.extract_name(path)
-        return cls(name=name, path=path, index=index)
+    def from_path(cls, path, index = None, identifier=None):
+        assert index is not None
+        file = super().from_path(path=path, index=index, identifier=identifier)
+        return cls.from_source_file(file, index)
+
 
     @classmethod
     def from_source_file(cls, file: SourceFile, index):

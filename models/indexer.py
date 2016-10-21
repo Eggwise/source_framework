@@ -150,7 +150,7 @@ class Indices(Printable):
             logging.error(error_message)
 
             logging.error('available indices: {0}'.format([i.index_type for i in self]))
-            logging.debug('all indices: {0}'.format([(i.name, i.index_type) for i in self._indices]))
+            logging.error('all indices: {0}'.format([(i.name, i.index_type) for i in self._indices]))
             raise AttributeError(error_message)
         self.scoped = indices_of_type
         logging.info('Indices found: {0}'.format(self))

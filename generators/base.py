@@ -23,20 +23,18 @@ def root_config(output_path='HERE'):
     root_config_file.do.write_to(path=output_path)
 
 
-
 def base_indices(output_folder = 'HERE', item=True, file=True):
     if output_folder == 'HERE':
         (frame, script_path, line_number,
          function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
 
-        output_folder = SourceComponent.from_path(script_path).folder
+        output_folder = SourceComponent.from_path(script_path).folder # type: Folder
 
     config = fm.config # type: Folder
     indice_configs = Indexed(config.indices.files)
 
+    indice_configs.do.write_to(folder=output_folder, name=lambda manager: manager.file.name)
 
-    
-    generated_configs = indice_configs.map(lambda file: file.do.write_to(output_folder, file.name))
 
 
 

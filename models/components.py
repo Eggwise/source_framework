@@ -269,14 +269,9 @@ class Folder(SourceComponent):
 
         return match_item
 
-    def join(self, mutable=False, *path):
+    def join(self, *path):
         new_folder = Folder.from_path(os.path.join(self.path, *path))
-
-        if mutable:
-            self.path = new_folder.path
-            return self
-        else:
-            return new_folder
+        return new_folder
 
     def get_folder(self, name):
         items_starting_with = [i for i in self.dirs if i.name.startswith(name)]

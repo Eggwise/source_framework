@@ -277,9 +277,14 @@ class Indexed(Printable, SourceComponentContainer):
 
     def __getattr__(self, item):
         logging.debug('get attribute from indexed items, applying get attr {0} to all scoped components'.format(item))
-        return_val = Indexed(self.scoped).map(lambda x: getattr(x, item))
+        return_val = self.map(mutable=True, map_func=lambda x: getattr(x, item))
         # self.map(lambda x: getattr(x, item))
         return return_val
+
+
+    def __call__(self, *args, **kwargs):
+        return self.map(mutable=True, map_func=lambda x: x.__call__(*args, **kwargs))
+
 
     def __len__(self):
         return len(self.scoped)

@@ -36,7 +36,7 @@ class SourceManagerBase():
             if folder is None:
                 folder = source_component.folder # type: Folder
 
-            folder.join(True, name)
+            folder  = folder.join(name)
 
 
 

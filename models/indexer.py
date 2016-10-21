@@ -101,15 +101,10 @@ class Index(Matchable, Printable):
 
 
 
-
-
-
     #helper to acces source attributes
     def __getattr__(self, attr):
         logging.info('gettting attribute {0} from index, passing it to the index config source file'.format(attr))
         return getattr(self.config_file, attr)
-
-
 
 
 

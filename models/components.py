@@ -1,7 +1,7 @@
 import jinja2, yaml, os, re, json
 import logging, copy
 from ..utils.utils import LOG_CONSTANTS
-
+import inspect
 from .indexer import Printable, Matchable, Unique
 
 
@@ -83,11 +83,20 @@ class SourceComponent(Printable, Matchable, Unique):
         else:
             name = os.path.basename(path)
 
-        if os.path.isfile(path):
+        if cls is Folder:
+            return Folder(name, path, True)
+        elif cls is SourceFile:
+            return SourceFile(name, path)
+        elif os.path.isfile(path):
             return SourceFile(name, path)
         else:
             return Folder(name, path)
 
+
+    @classmethod
+    def from_here(cls):
+        caller_frame = inspect.getouterframes(inspect.currentframe())[1]
+        return cls.from_frame(caller_frame)
 
     @classmethod
     def from_frame(cls, frame):
@@ -250,13 +259,15 @@ class Source(str, Printable):
 #TODO WIP
 class Folder(SourceComponent):
 
-    def __init__(self, name: str, path: str):
+    def __init__(self, name: str, path: str, get_dir_name = False):
         self.name = name
+
+        if os.path.isfile(path):
+            if not get_dir_name:
+                raise Exception('trying to create folder folder using file path: {0}'.format(self.path))
+            else:
+                path = os.path.dirname(path)
         self.path = os.path.realpath(path)
-        if os.path.isfile(self.path):
-            raise Exception('trying to create folder folder using file path: {0}'.format(self.path))
-
-
     @property
     def items(self):
         return [SourceComponent.from_path(os.path.join(self.path, i)) for i in os.listdir(self.path) if not i.startswith('.')]
@@ -315,6 +326,7 @@ class Folder(SourceComponent):
     def parent(self):
         parent_path, current = os.path.split(self.path)
         return Folder.from_path(parent_path)
+
 
 
 

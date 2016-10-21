@@ -18,7 +18,9 @@ def root_config(output_path='HERE', output_folder=None):
     if output_folder is None:
         if output_path == 'HERE':
             caller_frame = inspect.getouterframes(inspect.currentframe())[1]
-            output_folder = SourceComponent.from_frame(caller_frame).folder # type: Folder
+            output_folder = Folder.from_frame(caller_frame)
+
+            # output_folder = SourceComponent.from_frame(caller_frame).folder # type: Folder
         else:
             output_folder = Folder.from_path(output_path)
 
@@ -40,7 +42,7 @@ def base_indices(output_path = 'HERE', output_folder=None):
     if output_folder is None:
         if output_path == 'HERE':
             caller_frame = inspect.getouterframes(inspect.currentframe())[1]
-            output_folder = SourceComponent.from_frame(caller_frame).folder # type: Folder
+            output_folder = Folder.from_frame(caller_frame)
         else:
             output_folder = Folder.from_path(output_path)
 

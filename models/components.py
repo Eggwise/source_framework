@@ -68,12 +68,18 @@ class SourceComponent(Printable, Matchable, Unique):
 
 
     @classmethod
-    def from_path(cls, path, index = None):
+    def from_path(cls, path, index = None, identifier=None):
 
         path = os.path.realpath(path)
 
-        if index is not None:
-            name = cls.extract_name(path)
+        if identifier is not None and index is not None:
+            logging.info('Source component -> from_path -> provided both an index and a identifier..\n now using the given identifier instead of the index identifier')
+
+        if identifier is None and index is not None:
+            identifier = index.identifier
+
+        if identifier is not None:
+            name = cls.extract_name(path, identifier)
         else:
             name = os.path.basename(path)
 
@@ -81,6 +87,7 @@ class SourceComponent(Printable, Matchable, Unique):
             return SourceFile(name, path)
         else:
             return Folder(name, path)
+
 
     @classmethod
     def from_frame(cls, frame):

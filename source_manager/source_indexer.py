@@ -150,9 +150,8 @@ class SourceIndexerBase:
             # order them by type
             # indices_by_type[identifiers_with_types[identifier]] = paths
             for p in paths:
-                index_name = cls.extract_name(p, identifier)
-                index_config_file = SourceFile(name=index_name, path=p)
-                index = Index(index_name, identifiers_with_types[identifier], index_config_file)
+                index_config_file = SourceFile.from_path(path=p, identifier=identifier)
+                index = Index(identifiers_with_types[identifier], index_config_file)
                 logging.info('found index: {0}'.format(index))
                 indices.append(index)
         logging.info('------------------')
@@ -172,8 +171,7 @@ class SourceIndexerBase:
         child_indices = [i for i in indices if i.name != 'root']
 
         logging.info('Found the base index config files:\n{0}'.format('\n'.join([i._print for i in indices if i.name == 'root'])))
-        logging.info('Found the child index config files:\n{0}'.format(
-            '\n'.join([i._print for i in child_indices])))
+
 
         if len(child_indices) == 0:
             msg = 'NO INDEX CONFIG FILES FOUND!\n' \
@@ -181,6 +179,8 @@ class SourceIndexerBase:
             logging.error(msg)
             raise Exception(msg)
 
+        logging.info('Found the child index config files:\n{0}'.format(
+            '\n'.join([i._print for i in child_indices])))
 
         logging.info('Merging the configs..')
         logging.info('------------------')

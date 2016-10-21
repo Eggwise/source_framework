@@ -45,7 +45,11 @@ class Printable():
 class Index(Matchable, Printable):
 
 
-    def __init__(self, name: str, index_type: str, config_file):
+    def __init__(self, index_type: str, config_file, name=None):
+
+        if name is None:
+            name = config_file.name
+
         self.name = name
 
         self.index_type = index_type
@@ -78,6 +82,7 @@ class Index(Matchable, Printable):
             logging.error(error_message)
             raise Exception(error_message)
 
+
     def __eq__(self, other):
         return self.name == other.name and self.index_type == other.index_type
 
@@ -93,6 +98,10 @@ class Index(Matchable, Printable):
     @property
     def _print(self):
         return 'Index || >>> {0} ||| type  >>> {1}  || identifier >>> {2} '.format(self.name, self.index_type, self.identifier)
+
+
+
+
 
 
     #helper to acces source attributes

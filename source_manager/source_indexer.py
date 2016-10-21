@@ -304,7 +304,7 @@ class ItemIndexer(SourceIndexerBase):
             if 'end' in config['identifier']:
                 identifier_end_config = i.identifier['end']
             else:
-                logging.info('no end tag provided')
+                logging.info('NO END TAG PROVIDED')
                 logging.info('getting default end identifier tag from root.item.index')
                 if 'end_default' not in parse_tags:
                     error_message = 'Could not find default end identifier tag'
@@ -365,9 +365,9 @@ class ItemIndexer(SourceIndexerBase):
                     break
             if line_end is None:
                 # No end tag found for dependency section
-                error_message = 'Could not find end of region for: {0}'.format(end_regex)
+                error_message = 'Could not find end of item with match props: {0}\nstart regex: {1}\nend regex: {2}'.format(match_props, start_match_regex, end_regex)
                 logging.error(error_message)
-                print(error_message)
+
                 raise Exception(error_message)
 
             if 'name' not in match_props:

@@ -82,6 +82,12 @@ class SourceComponent(Printable, Matchable, Unique):
         else:
             return Folder(name, path)
 
+    @classmethod
+    def from_frame(cls, frame):
+        (frame, script_path, line_number,
+         function_name, lines, index) = frame
+
+        return cls.from_path(script_path)
 
     @property
     def exists(self):
@@ -284,12 +290,12 @@ class Folder(SourceComponent):
         return match_item
 
     def get_file(self, name):
-        items_starting_with = [i for i in self.dirs if i.name.startswith(name)]
+        items_starting_with = [i for i in self.files if i.filename.startswith(name)]
 
         if len(items_starting_with) > 1:
             raise Exception('multiple items with same name')
         if len(items_starting_with) == 0:
-            raise AttributeError('no items with found with name {0}\nAt path: {1}\nFiles available: {2}'.format(name, self.path, self.files))
+            raise AttributeError('no items with found with name {0}\nAt path: {1}\nFiles available: {2}'.format(name, self.path, [i.filename for i in self.files]))
 
         match_item = items_starting_with[0]
         return match_item

@@ -563,7 +563,7 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
     def here(self):
         (frame, script_path, line_number,
          function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
-        print(script_path)
+        # print(script_path)
         return self.at_path(script_path)
 
     def at(self, *source_components):

@@ -363,9 +363,9 @@ class SourceFile(SourceComponent):
         return Folder.from_path(os.path.realpath(os.path.dirname(self.path)))
 
     @property
-    def do(self):
+    def do(self) :
         from ..source_manager.source_manager import FileManager
-        return FileManager(self)
+        return FileManager(self) # type: FileManager
 
     @property
     def extension(self) -> str:

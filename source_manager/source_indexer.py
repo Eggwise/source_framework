@@ -32,7 +32,7 @@ class SourceIndexerBase:
 
 
 
-    config = {
+    _config = {
         # root config for identifying the root config file in the workspace
         'config': {
             'identifier': '.config$'
@@ -48,7 +48,7 @@ class SourceIndexerBase:
         logging.info('Walking up from the dir: {0}'.format(cls.CALLER_DIR))
         indexer_location = cls.CALLER_DIR
 
-        config_identifier = cls.config['config']['identifier']
+        config_identifier = cls._config['config']['identifier']
         root_config_name = 'root'
         root_config_identifier = root_config_name + config_identifier
 
@@ -74,7 +74,7 @@ class SourceIndexerBase:
         #using the hardcoded index described in the config attribute of the class
 
 
-        root_config_name = SourceFile.extract_name(root_config_path, cls.config['config']['identifier'])
+        root_config_name = SourceFile.extract_name(root_config_path, cls._config['config']['identifier'])
 
         #if ever this assertion fails... something is terribly wrong
         assert root_config_name == 'root'

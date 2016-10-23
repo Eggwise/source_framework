@@ -194,6 +194,7 @@ class Source(str, Printable):
             self.lines = source
         else:
             self.lines = source.splitlines(keepends=True)
+
         #TODO check if super call causes errors
         super(str).__init__()
 
@@ -247,13 +248,28 @@ class Source(str, Printable):
 
     @classmethod
     def from_json(cls, json_object):
-        return cls(json.dumps(json_object))
+        json_dump = json.dumps(json_object, indent=4)
+        return cls(json_dump.splitlines())
 
     @classmethod
     def from_yaml(cls, yaml_object):
         return cls(yaml.dump(yaml_object, default_flow_style=True))
 
+    #TODO TEST
+    def to_file(self, path=None, name=None, folder=None, filename=None):
 
+        if path is None and (folder is None or filename is None):
+            err_msg = 'Must provide a path or a folder with filename to create path with.'
+            logging.error(err_msg)
+            raise Exception(err_msg)
+        else:
+            path = os.path.join(folder.path, filename)
+
+        if name is None:
+            #create name from extension
+            name = ''.join(filename.split('.')[:-1])
+
+        return SourceFile(name, path, source=self)
 
 
 #TODO WIP
@@ -438,10 +454,11 @@ class IndexedFile(SourceFile, SourceComponent):
         return 'Indexed file: {0} at {1}'.format(self.name, self.path)
 
 
-    #pass down to the filemanager
+    #pass down to the sourcefile
     def __getattr__(self, item):
-        manager = self.MANAGER(self)
-        return getattr(manager, item)
+        return getattr(self.source, item)
+        # manager = self.MANAGER(self)
+        # return getattr(manager, item)
 
     @property
     def _print(self):

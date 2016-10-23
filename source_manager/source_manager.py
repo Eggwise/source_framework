@@ -16,8 +16,8 @@ class SourceManagerBase():
             if folder is not None or name is not None:
                 warn_message = 'write to path overiddes the folder & name parameter!'
                 logging.warning(warn_message)
+            output_path = path
 
-            folder = Folder.from_path(path)
 
         else:
             if name is None:
@@ -36,21 +36,23 @@ class SourceManagerBase():
             if folder is None:
                 folder = source_component.folder # type: Folder
 
-            folder  = folder.join(name)
+
+            output_path = os.path.join(folder.path, name)
+
 
 
 
         #TODO more checks for existence of folder etc
 
-        if folder.exists and not override:
+        if os.path.exists(output_path) and not override:
             error_message = 'trying to write to existing path, {0} \n if you whish to override use the override parameter.'.format(path)
             logging.error(error_message)
             raise Exception(error_message)
 
-        with open(folder.path, 'w') as output_file:
+        with open(output_path, 'w') as output_file:
             output = source_component.source
             output_file.write(output)
-            return folder.path
+            return output_path
 
 
 
@@ -69,7 +71,7 @@ class FileManager(SourceManagerBase):
         self._file = file
 
     @property
-    def file(self):
+    def file(self) -> SourceFile:
         return self._file
 
     def importt(self):
@@ -92,3 +94,10 @@ class FileManager(SourceManagerBase):
         return SourceFile.from_path(written_path)
 
 
+    def save(self, backup=True):
+
+        if backup and os.path.exists(self.file.path):
+            backup = SourceFile.from_path(self.file.path)
+            backup.do.write_to(name= backup.filename + '.backup')
+
+        self.write_to(self.file.folder, self.file.filename, override=True)

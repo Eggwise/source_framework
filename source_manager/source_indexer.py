@@ -54,7 +54,9 @@ class SourceIndexerBase:
 
         root_dir_search = find_dirs(indexer_location, root_config_identifier)
         if len(root_dir_search) == 0:
-            error_message = 'NO ROOT CONFIG\nCould not find root config file\n searched from {0} \n upwards..'.format(indexer_location)
+            error_message = '\n--------------\nNO ROOT CONFIG\nCould not find root config file\nSearched upwards from {0} \n'.format(indexer_location) + \
+                '--------------\nIf this is a new project, use the generator to generate the neccesary root and base config files' \
+                '\n\nsourceframework.generate.new_project()'
             logging.error(error_message)
             raise Exception(error_message)
         root_config_path = root_dir_search[0]

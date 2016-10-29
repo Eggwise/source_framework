@@ -190,10 +190,11 @@ class Source(str, Printable):
     def __init__(self, source):
         self._source = source
         self._current_line = 0
+
         if isinstance(source, list):
-            self.lines = source
-        else:
-            self.lines = source.splitlines(keepends=True)
+            source = ''.join(source)
+
+        self.lines = source.splitlines(keepends=True)
 
         #TODO check if super call causes errors
         super(str).__init__()
@@ -236,7 +237,7 @@ class Source(str, Printable):
     def __getitem__(self, item):
         if isinstance(item, slice):
             return self._slice(item.start, item.stop)
-
+        return self.lines[item]
 
     #HELPERS
     @property
@@ -256,14 +257,21 @@ class Source(str, Printable):
         return cls(yaml.dump(yaml_object, default_flow_style=True))
 
     #TODO TEST
-    def to_file(self, path=None, name=None, folder=None, filename=None):
+    def to_file(self, path=None, name=None, folder=None, filename=None, source_file=None):
 
-        if path is None and (folder is None or filename is None):
-            err_msg = 'Must provide a path or a folder with filename to create path with.'
+        if path is None and (folder is None or filename is None) and source_file is None:
+            err_msg = 'Must provide a path, a folder with filename, or a sourcefile to create path with.'
             logging.error(err_msg)
             raise Exception(err_msg)
-        else:
-            path = os.path.join(folder.path, filename)
+        elif folder is not None and source_file is not None:
+            err_msg = 'Provided both a folder and a source file, choose either one'
+            logging.error(err_msg)
+            raise Exception
+        elif source_file is not None:
+            if filename is None:
+                filename = source_file.filename
+
+            path = os.path.join(source_file.path, filename)
 
         if name is None:
             #create name from extension
@@ -382,8 +390,13 @@ class SourceFile(SourceComponent):
 
     @classmethod
     def _load_source(cls, path: str):
-        with open(path) as f:
-            source = f.read()
+        with open(path, encoding='utf8') as f:
+
+            try:
+                source = f.read()
+            except UnicodeDecodeError:
+                logging.error('Failed to read: {0}'.format(path))
+                raise
             return source
 
     @property
@@ -408,7 +421,6 @@ class SourceFile(SourceComponent):
     @property
     def source(self) -> Source:
         return Source(self._source)
-
 
 
     # @property

@@ -3,7 +3,7 @@ import importlib.util
 import logging
 import os
 
-from ..models.components import SourceFile, Folder
+from ..models.components import SourceFile, Folder, Source
 
 
 class SourceManagerBase():
@@ -49,7 +49,7 @@ class SourceManagerBase():
             logging.error(error_message)
             raise Exception(error_message)
 
-        with open(output_path, 'w') as output_file:
+        with open(output_path, 'w', encoding='utf8') as output_file:
             output = source_component.source
             output_file.write(output)
             return output_path
@@ -101,3 +101,11 @@ class FileManager(SourceManagerBase):
             backup.do.write_to(name= backup.filename + '.backup')
 
         self.write_to(self.file.folder, self.file.filename, override=True)
+        return self
+
+    def replace_with(self, source):
+        if not isinstance(source, Source):
+            source = Source(source)
+
+        self._file._source = source
+        return self

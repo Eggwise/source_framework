@@ -5,7 +5,7 @@ from ..utils.utils import LOG_CONSTANTS
 
 
 ROOT_IDENTIFIER = '.config'
-
+IGNORE_IDENTIFIER = 'ignore.index'
 
 class Unique():
     def __hash__(self):
@@ -59,6 +59,9 @@ class Index(Matchable, Printable):
         # assert isinstance(config_file, SourceFile)
         if name == 'root':
             self.identifier = ROOT_IDENTIFIER
+            return
+        if name == 'ignore':
+            self.identifier = IGNORE_IDENTIFIER
             return
 
         if 'identifier' not in self.config:

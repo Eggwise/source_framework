@@ -145,8 +145,10 @@ class SourceIndexerBase:
         logging.info('searching for index configuration files...')
         indices = []
 
-        # get paths for indices
+        # get paths of index config files
         indexed_paths = cls._get_paths_by_identifiers(identifiers)
+
+        # retrieve config files
         logging.info('------------------')
         for identifier, paths in indexed_paths.items():
             # order them by type
@@ -204,6 +206,60 @@ class SourceIndexerBase:
 
         logging.info('\n--------------\nGET INDICES COMPLETE\n--------------')
         return Indices(merged_indices)
+
+
+    @classmethod
+    def _get_index_paths(cls, indices: Indices, with_ignore=True):
+
+        ignore_indices = [i for i in indices if i.index_type == 'ignore']
+        for i in ignore_indices:
+
+            if not isinstance(i.identifier, str):
+                error_message = 'trying to index files using non file indices \n' \
+                                + 'are you sure the index config file is correct ?\n' \
+                                + 'for files use a string as identifier\n' \
+                                + 'Indices used: \n{0}'.format(indices._print)
+                logging.error(error_message)
+                raise Exception(error_message)
+
+            if 'identifier' not in i.config:
+                print('NO IDENTIFIER FOR INDEX: {0}'.format(i.name))
+                raise Exception()
+            ##TODO
+            identifiers_with_indices[i.identifier] = i
+        assert isinstance(indices, Indices)
+        # indices = []
+        indexed_paths = cls._get_paths_by_identifiers(list(identifiers_with_indices.keys()))
+
+
+
+        #GET FILE PATHS
+
+        identifiers_with_indices = {}
+        assert all(list(map(lambda x: x.index_type == 'file', indices)))
+
+        ## for now just do the file types and get the items from the files later
+        file_indices = [i for i in indices if i.index_type == 'file']
+        # file_indices = [i for i in indices]
+        for i in file_indices:
+
+            if not isinstance(i.identifier, str):
+                error_message = 'trying to index files using non file indices \n' \
+                                + 'are you sure the index config file is correct ?\n' \
+                                + 'for files use a string as identifier\n' \
+                                + 'Indices used: \n{0}'.format(indices._print)
+                logging.error(error_message)
+                raise Exception(error_message)
+
+            if 'identifier' not in i.config:
+                print('NO IDENTIFIER FOR INDEX: {0}'.format(i.name))
+                raise Exception()
+            ##TODO
+            identifiers_with_indices[i.identifier] = i
+        assert isinstance(indices, Indices)
+        # indices = []
+        indexed_paths = cls._get_paths_by_identifiers(list(identifiers_with_indices.keys()))
+
 
     @classmethod
     def _index_files(cls, indices: Indices):
@@ -449,6 +505,7 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
         except AttributeError as e:
             logging.info('Tried retrieving item indices but none where available.')
             logging.info('Exception, thrown: {0}'.format(e))
+            logging.info('------\nskip item indexing.')
             item_indices = None
 
         file_indices = self.indices.file.ok

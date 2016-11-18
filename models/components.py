@@ -239,6 +239,12 @@ class Source(str, Printable):
             return self._slice(item.start, item.stop)
         return self.lines[item]
 
+    def __setitem__(self, key, value):
+
+        #todo
+        if isinstance(key, int):
+            self.lines[key] = value
+
     #HELPERS
     @property
     def _print(self):
@@ -534,7 +540,38 @@ class IndexedItem(SourceComponent):
         return os.path.basename(self.indexed_file.path)
 
 
+class IndexedProject(SourceComponent):
 
+
+    def __init__(self, config_file):
+        self.config = config_file
+
+
+    def register_project(self, project):
+
+        config = self.config.yaml
+
+        if 'dependencies' not in config:
+            config['dependencies'] = []
+
+        project_identifier = {
+            'name': project.name,
+            'path': project.path
+        }
+        config['dependencies'].append(project_identifier)
+
+        new_config = Source.from_yaml(config).to_file(source_file=self.config)
+        new_config.do.save(backup=True)
+
+
+
+
+    @classmethod
+    def from_path(cls, path, index = None, identifier=None):
+        assert index is None
+        assert identifier is None
+        file = super().from_path(path=path, index=index, identifier=identifier)
+        return cls(file)
 
 
 

@@ -2,11 +2,11 @@ import inspect
 import logging
 import os
 import re
-
+import pathlib
 
 from ..models.indexer import Index, Indexed, Indices, Printable
 
-from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer
+from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer, IndexedProject
 from ..utils.utils import find_dirs, merge, LOG_CONSTANTS
 
 
@@ -38,6 +38,7 @@ class SourceIndexerBase:
             'identifier': '.config$'
         },
         'root_config_name': 'root.config',
+        'root_config_folder': '{home}/.source_framework'
     }
 
 
@@ -445,6 +446,54 @@ class ItemIndexer(SourceIndexerBase):
         return items
 
 
+class ProjectIndexer(SourceIndexerBase):
+
+
+    @staticmethod
+    def _generate_root_config():
+        root_config = {
+            'name': 'base'
+        }
+        return Source.from_yaml(root_config)
+    @classmethod
+    def _get_root_folder_path(cls):
+        config_folder_args = {
+
+        }
+        logging.info('Project indexer: find root config')
+        home_folder = pathlib.Path.home()
+        config_folder_args['home'] = str(home_folder)
+
+        root_config_folder = cls._config['root_config_folder']
+        root_config_folder_path = root_config_folder.format(**config_folder_args)
+        return root_config_folder_path
+
+    # TODO
+    @classmethod
+    def _find_or_create_root_config(cls):
+
+        root_config_folder_path = cls._get_root_folder_path()
+
+        if not os.path.exists(root_config_folder_path):
+            try:
+                os.mkdir(root_config_folder_path)
+            except Exception as e:
+
+                logging.error('ERROR creating root config folder')
+                raise e
+
+            # place root config file in folder
+
+        root_config_name = cls._config['root_config_name']
+        root_config_file_path = os.path.join(root_config_folder_path, root_config_name)
+
+
+        if not os.path.exists(root_config_file_path):
+            root_config_source = cls._generate_root_config()
+            root_config_file = root_config_source.to_file(path=root_config_file_path)
+            root_config_file.do.save()
+
+        return IndexedProject.from_path(root_config_file_path)
 
 
 

@@ -146,7 +146,7 @@ class SourceComponentContainer():
             logging.error(err_message)
             logging.error('If you whish to merge the components use merge')
             logging.error('Or if you really want a list of components set the one parameter to False')
-            logging.error('Current items in scope: \n{0}'.format(self._print()))
+            logging.error('Current items in scope: \n{0}'.format(self._print))
             raise Exception(err_message)
         return self.scoped[0]
 
@@ -608,7 +608,7 @@ class Project(SourceComponent, Printable):
         config = self.config.yaml
         dependencies = []
         if 'dependencies' in config:
-            dependencies = [self.from_dependency(i) for i in self.config['dependencies']]
+            dependencies = [self.from_dependency(i) for i in config['dependencies']]
 
         return dependencies
 

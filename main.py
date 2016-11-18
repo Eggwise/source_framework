@@ -1,6 +1,7 @@
 import inspect
 import logging, os
 
+from source_framework.models.components import Project
 from source_framework.models.indexer import Indexed
 from .source_manager.source_indexer import SourceIndexer
 from . import generators
@@ -63,9 +64,10 @@ def from_this():
 
 
 
-def current_project():
+def current_project() -> Project:
     source_indexer = find()
     root_config = _source_indexer._get_root_config()
+
     return source_indexer.projects.by_path(root_config.path).one
 
 

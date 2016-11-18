@@ -502,7 +502,17 @@ class ProjectIndexer(SourceIndexerBase):
         base_config = cls._find_or_create_base_config()
         project_config = Project(cls._get_root_config())
 
-        return Indexed(*project_config.with_dependencies(), *base_config.with_dependencies())
+        project_paths = []
+        unique_projects = []
+        all_projects = [*project_config.with_dependencies(), *base_config.with_dependencies()]
+
+        while len(all_projects) != 0:
+            p = all_projects.pop()
+            if p.path in project_paths:
+                continue
+            project_paths.append(p.path)
+            unique_projects.append(p)
+        return Indexed(unique_projects)
 
 
 

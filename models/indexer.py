@@ -6,6 +6,7 @@ from ..utils.utils import LOG_CONSTANTS
 
 ROOT_IDENTIFIER = '.config'
 IGNORE_IDENTIFIER = 'ignore.index'
+PROJECT_IDENTIFIER = 'root.config'
 
 class Unique():
     def __hash__(self):
@@ -14,16 +15,17 @@ class Unique():
 
 
 class Matchable():
-
     def match(self, query):
 
         if isinstance(self, Index):
             return self.name == query or self.index_type == query
+        if isinstance(self, IndexedSourceComponent):
+            return self.name == query or self.index.match(query)
+        elif isinstance(self, SourceComponent):
+            return self.name == query
 
-        if isinstance(self, SourceComponent):
-            return self.name == query or self.index.match(query)
-        else:
-            return self.name == query or self.index.match(query)
+        raise NotImplemented
+
 
 
 class Printable():
@@ -201,7 +203,8 @@ class Indices(Printable):
 
 
 
-from .components import SourceComponentContainer, SourceComponent
+from .components import SourceComponentContainer, SourceComponent, IndexedSourceComponent
+
 
 class Indexed(Printable, SourceComponentContainer):
 

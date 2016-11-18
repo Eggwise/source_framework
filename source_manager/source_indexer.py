@@ -6,7 +6,8 @@ import pathlib
 
 from ..models.indexer import Index, Indexed, Indices, Printable
 
-from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer, IndexedProject
+from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer, Project, \
+    IndexedSourceComponent
 from ..utils.utils import find_dirs, merge, LOG_CONSTANTS
 
 
@@ -445,18 +446,17 @@ class ItemIndexer(SourceIndexerBase):
 
         return items
 
-
 class ProjectIndexer(SourceIndexerBase):
 
 
     @staticmethod
-    def _generate_root_config():
+    def _generate_base_config():
         root_config = {
             'name': 'base'
         }
         return Source.from_yaml(root_config)
     @classmethod
-    def _get_root_folder_path(cls):
+    def _get_base_folder_path(cls):
         config_folder_args = {
 
         }
@@ -468,11 +468,11 @@ class ProjectIndexer(SourceIndexerBase):
         root_config_folder_path = root_config_folder.format(**config_folder_args)
         return root_config_folder_path
 
-    # TODO
+    # TODO Test
     @classmethod
-    def _find_or_create_root_config(cls):
+    def _find_or_create_base_config(cls):
 
-        root_config_folder_path = cls._get_root_folder_path()
+        root_config_folder_path = cls._get_base_folder_path()
 
         if not os.path.exists(root_config_folder_path):
             try:
@@ -489,16 +489,25 @@ class ProjectIndexer(SourceIndexerBase):
 
 
         if not os.path.exists(root_config_file_path):
-            root_config_source = cls._generate_root_config()
+            logging.info('Root file not found at{0}'.format(root_config_file_path))
+            root_config_source = cls._generate_base_config()
+            logging.info('Root file generated')
             root_config_file = root_config_source.to_file(path=root_config_file_path)
             root_config_file.do.save()
 
-        return IndexedProject.from_path(root_config_file_path)
+        return Project.from_path(root_config_file_path)
+
+    @classmethod
+    def _index_projects(cls):
+        base_config = cls._find_or_create_base_config()
+        project_config = Project(cls._get_root_config())
+
+        return Indexed(*project_config.with_dependencies(), *base_config.with_dependencies())
 
 
 
 # @pretty_print
-class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
+class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContainer):
 
     TIMES_INDEXED = 0
 
@@ -571,10 +580,17 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
                 indexed_items = self._extract_items(file, item_indices)
                 all_indexed_items.extend(indexed_items)
 
-        all_indexed = Indexed(all_indexed_items, all_indexed_files)
+
+        # index projects
+        indexed_projects = self._index_projects()
+
+
+        all_indexed = Indexed(all_indexed_items, all_indexed_files, indexed_projects)
         logging.info(LOG_CONSTANTS.REGION.format('INDEXING END'))
         logging.info(
             'indexed {0} source components using {1} indices'.format(len(all_indexed), len(self.indices)))
+
+
 
         return all_indexed
 
@@ -653,14 +669,32 @@ class SourceIndexer(ItemIndexer, Printable, SourceComponentContainer):
         return return_val
 
 
+    def by_path(self, path):
+        return self.filter(lambda x: x.path == path)
+
     @property
     def items(self):
-        return self.filter(lambda x: x.index.index_type == 'item')
+        def filter_func(comp):
+            if isinstance(comp, IndexedSourceComponent):
+                return comp.index.index_type == 'item'
+            else:
+                return False
+        return self.filter(filter_func)
 
 
     @property
     def files(self):
-        return self.filter(lambda x: x.index.index_type == 'file')
+        def filter_func(comp):
+            if isinstance(comp, IndexedSourceComponent):
+                return comp.index.index_type == 'file'
+            else:
+                return False
+        return self.filter(filter_func)
+
+
+    @property
+    def projects(self):
+        return self.filter(lambda x: isinstance(x, Project))
 
     @property
     def components(self):

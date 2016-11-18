@@ -1,5 +1,7 @@
 import inspect
 import logging, os
+
+from source_framework.models.indexer import Indexed
 from .source_manager.source_indexer import SourceIndexer
 from . import generators
 
@@ -10,7 +12,7 @@ _init_config = {
 
 _source_indexer = None
 
-def init():
+def init(path=None):
     global _init_config
     global _source_indexer
 
@@ -23,8 +25,10 @@ def init():
 
 
 
-
-    _init_config['caller_path'] = os.path.realpath(script_path)
+    if path is not None:
+        _init_config['caller_path'] = os.path.realpath(path)
+    else:
+        _init_config['caller_path'] = os.path.realpath(script_path)
 
     SourceIndexer.prepare(_init_config)
     _source_indexer = SourceIndexer()
@@ -36,15 +40,12 @@ def init():
 def _check_initialized():
     global _init_config
     global _source_indexer
-    if _init_config['caller_path'] is None:
-        error_message = 'source manager is not initialized. call init() first'
-        logging.error(error_message)
-        raise Exception(error_message)
 
     if _source_indexer is None:
         error_message = 'something went wrong when initializing the source manager. did you call init()?'
         logging.error(error_message)
         raise Exception(error_message)
+
 
 
 def find():
@@ -59,6 +60,16 @@ def from_this():
 
     indexer = _source_indexer
     return indexer.at_path(script_path)
+
+
+
+def current_project():
+    source_indexer = find()
+    root_config = _source_indexer._get_root_config()
+    return source_indexer.projects.by_path(root_config.path).one
+
+
+
 
 
 

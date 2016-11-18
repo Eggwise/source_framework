@@ -109,6 +109,17 @@ class SourceComponent(Printable, Matchable, Unique):
     def exists(self):
         return os.path.exists(self.path)
 
+class IndexedSourceComponent(SourceComponent):
+
+    @property
+    def index(self):
+        return self._index;
+
+    @index.setter
+    def index(self, index):
+        self._index = index
+
+
 class SourceComponentContainer():
 
     @property
@@ -279,9 +290,27 @@ class Source(str, Printable):
 
             path = os.path.join(source_file.path, filename)
 
+
         if name is None:
+
+            if filename is None and path is None:
+                err_msg = 'No filename or path provided to create name for file from.'
+                logging.error(err_msg)
+                raise Exception
+
+            #create filename from path
+            if filename is None:
+                if not os.path.isfile(path):
+                    err_msg = 'The path provided contains no filename to extract.'
+                    logging.error(err_msg)
+                    raise Exception(err_msg)
+                filename = os.path.split(path)[-1]
+
+
             #create name from extension
             name = ''.join(filename.split('.')[:-1])
+
+
 
         return SourceFile(name, path, source=self)
 
@@ -457,7 +486,7 @@ class SourceFile(SourceComponent):
 
 
 from .indexer import Index
-class IndexedFile(SourceFile, SourceComponent):
+class IndexedFile(SourceFile, IndexedSourceComponent):
 
     # MANAGER = FileManager
 
@@ -495,7 +524,7 @@ class IndexedFile(SourceFile, SourceComponent):
         return cls(file.name, file.path, index)
 
 
-class IndexedItem(SourceComponent):
+class IndexedItem(IndexedSourceComponent):
 
     def __init__(self, name: str, indexed_file: IndexedFile, line_start: int, line_end: int, index, properties: dict = None):
         self.line_start = line_start
@@ -540,12 +569,21 @@ class IndexedItem(SourceComponent):
         return os.path.basename(self.indexed_file.path)
 
 
-class IndexedProject(SourceComponent):
+class Project(SourceComponent, Printable):
 
 
-    def __init__(self, config_file):
+    def __init__(self, config_file: SourceFile, name=None):
         self.config = config_file
 
+        if name is None:
+            config = self.config.yaml
+            if 'name' not in config:
+                err_msg = 'Project: ERROR no name provided inside project config at: {0}'.format(config_file.path)
+                logging.error(err_msg)
+                raise Exception(err_msg)
+            name = config['name']
+
+        self.name = name
 
     def register_project(self, project):
 
@@ -564,15 +602,39 @@ class IndexedProject(SourceComponent):
         new_config.do.save(backup=True)
 
 
+    @property
+    def dependencies(self):
 
+        config = self.config.yaml
+        dependencies = []
+        if 'dependencies' in config:
+            dependencies = [self.from_dependency(i) for i in self.config['dependencies']]
+
+        return dependencies
 
     @classmethod
     def from_path(cls, path, index = None, identifier=None):
         assert index is None
         assert identifier is None
-        file = super().from_path(path=path, index=index, identifier=identifier)
-        return cls(file)
 
+        config_file = SourceFile.from_path(path)
+        return cls(config_file)
+
+    @classmethod
+    def from_dependency(cls, dependency):
+        path = dependency['path']
+        return cls.from_path(path)
+
+
+    def with_dependencies(self):
+        return [*self.dependencies, self]
+
+    def __getattr__(self, item):
+        return getattr(self.config, item)
+
+    @property
+    def _print(self):
+        return 'Indexed project: {0} at {1}'.format(self.name, self.path)
 
 
 

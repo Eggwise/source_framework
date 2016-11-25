@@ -275,6 +275,8 @@ class Source(str, Printable):
 
     #TODO TEST
     def to_file(self, path=None, name=None, folder=None, filename=None, source_file=None):
+        #todo validate file path
+        #todo validate name
 
         if path is None and (folder is None or filename is None) and source_file is None:
             err_msg = 'Must provide a path, a folder with filename, or a sourcefile to create path with.'
@@ -287,10 +289,9 @@ class Source(str, Printable):
         elif source_file is not None:
             if filename is None:
                 filename = source_file.filename
+            folder = source_file.folder
 
-            path = os.path.join(source_file.path, filename)
-
-
+        path = os.path.join(folder.path, filename)
         if name is None:
 
             if filename is None and path is None:

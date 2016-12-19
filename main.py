@@ -4,6 +4,7 @@ import logging, os
 from source_framework.models.components import Project
 from source_framework.models.indexer import Indexed
 from .source_manager.source_indexer import SourceIndexer
+from .source_manager.source_editor import FileEditor
 from . import generators
 
 _init_config = {
@@ -57,8 +58,9 @@ def find():
 def from_this():
     (frame, script_path, line_number,
      function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
-
+    _check_initialized()
     indexer = _source_indexer
+
     return indexer.at_path(script_path)
 
 

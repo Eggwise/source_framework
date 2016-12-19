@@ -512,8 +512,8 @@ class IndexedFile(SourceFile, IndexedSourceComponent):
     def __eq__(self, other):
         return self.name == other.name and self.index == other.index
 
-    def __str__(self):
-        return 'Indexed file: {0} at {1}'.format(self.name, self.path)
+    def __repr__(self):
+        return self._print
 
 
     #pass down to the sourcefile
@@ -530,7 +530,7 @@ class IndexedFile(SourceFile, IndexedSourceComponent):
 
     @property
     def _print(self):
-        return 'indexed file: {2} >>> {0} <<< \t{1}'.format(self.name, self.path, self.index.name)
+        return '<Indexed file: {2} >>> {0} <<< \t{1}>'.format(self.name, self.path, self.index.name)
 
 
     @classmethod
@@ -565,9 +565,11 @@ class IndexedItem(IndexedSourceComponent):
     def __getattr__(self, item):
         return getattr(self.indexed_file, item)
 
+    def __repr__(self):
+        return self._print
     @property
     def _print(self):
-        return 'Indexed item: {0} between lines {1} and {2} in file: {3}'.format(self.name, self.line_start, self.line_end, self.filename)
+        return '<Indexed item: {0} between lines {1} and {2} in file: {3}>'.format(self.name, self.line_start, self.line_end, self.filename)
 
 
     @property
@@ -588,6 +590,7 @@ class IndexedItem(IndexedSourceComponent):
     @property
     def filename(self):
         return os.path.basename(self.indexed_file.path)
+
 
 
 class Project(SourceComponent, Printable):

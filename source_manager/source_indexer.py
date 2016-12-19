@@ -381,8 +381,8 @@ class FileIndexer(SourceIndexerBase):
 
 
 class ItemIndexer(FileIndexer):
-    def index_all(self):
-        indexed_files = self.files
+
+
 
     @staticmethod
     def parse_identifier_arguments(identifier_arguments, identifier_string, start=True):
@@ -565,6 +565,10 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
         self.scoped = scoped or SourceIndexer._all_indexed
         self.current = 0
 
+    def __repr__(self):
+        representation = '<SourceIndexer [{0}]>'.format(','.join([str(i) for i in self]))
+        return representation
+
     def __getattr__(self, name):
         return self.filter(lambda x: x.match(name))
 
@@ -740,3 +744,8 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
         SourceIndexerBase.CALLER_DIR = root_dir
         return SourceIndexer()
 
+
+    @staticmethod
+    def from_components(source_components):
+        indexer = SourceIndexer(scoped=source_components, index_all=False)
+        return indexer

@@ -7,4 +7,5 @@ parse_tags:
 #this is the standard identifier used when not overidden in the child index config
 #this identifier matches 1 or more whitespaces
 identifier:
-  end_tag: "{ws}+"
+  end: "{ws}+"
+

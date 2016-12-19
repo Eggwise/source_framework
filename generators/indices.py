@@ -78,3 +78,4 @@ def _generate_file_index(output_folder, name, identifier):
     print('File index done created at: {0}'.format(index_file.path))
 
     return True
+

@@ -276,7 +276,7 @@ class Source(str, Printable):
 
     @classmethod
     def from_yaml(cls, yaml_object):
-        return cls(yaml.dump(yaml_object, default_flow_style=True))
+        return cls(yaml.dump(yaml_object, default_flow_style=False))
 
     #TODO TEST
     def to_file(self, path=None, name=None, folder=None, filename=None, source_file=None):
@@ -518,7 +518,13 @@ class IndexedFile(SourceFile, IndexedSourceComponent):
 
     #pass down to the sourcefile
     def __getattr__(self, item):
-        return getattr(self.source, item)
+        try:
+            return_val = getattr(self.source, item)
+            return return_val
+        except Exception as e:
+            logging.error('{0}\nERROR -> __getattr__ {1}'.format(self, item))
+            raise e
+
         # manager = self.MANAGER(self)
         # return getattr(manager, item)
 

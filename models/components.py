@@ -59,9 +59,14 @@ class SourceComponent(Printable, Matchable, Unique):
         parent, filename = os.path.split(path)
         name_match = re.match(extract_regex, filename)
 
-        assert name_match is not None
-        assert 'name' in name_match.groupdict()
-        assert name_match.groupdict()['name']
+
+        try:
+            assert name_match is not None
+            assert 'name' in name_match.groupdict()
+            assert name_match.groupdict()['name']
+        except AssertionError:
+            msg = 'Error extracting name from path: {0}\n using identifier: {1}'.format(path, identifier)
+            raise Exception(msg)
 
         return name_match.groupdict()['name']
 
@@ -291,7 +296,9 @@ class Source(str, Printable):
                 filename = source_file.filename
             folder = source_file.folder
 
-        path = os.path.join(folder.path, filename)
+        if path is None:
+            path = os.path.join(folder.path, filename)
+
         if name is None:
 
             if filename is None and path is None:
@@ -301,8 +308,15 @@ class Source(str, Printable):
 
             #create filename from path
             if filename is None:
-                if not os.path.isfile(path):
-                    err_msg = 'The path provided contains no filename to extract.'
+                is_file = False
+                if not os.path.exists(path):
+                    if not path.endswith('/'):
+                        is_file = True
+                else:
+                    is_file = os.path.isfile(path)
+
+                if not is_file:
+                    err_msg = 'The path provided contains no filename to extract.\nprovided path: {0}'.format(path)
                     logging.error(err_msg)
                     raise Exception(err_msg)
                 filename = os.path.split(path)[-1]

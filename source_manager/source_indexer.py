@@ -131,13 +131,13 @@ class SourceIndexerBase:
 
         # get identifier list
         identifiers = [v for k, v in root_index_config['identifiers'].items()]
-        index_types = root_index_config['types']
+        index_types = list(set(root_index_config['types']))
 
         if len(identifiers) > len(index_types):
             msg = 'NO INDEX TYPES DEFINED FOR THE IDENTIFIERS IN THE ROOT INDEX CONFIG\n\nthe following index types are defined\n' \
                   '{0}'.format(index_types) + \
                   '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) + \
-                  'Check your root config file at: {0}'.format(root_config.path)
+                  'Check your root config file at: {0}'.format(root_config_file.path)
             logging.error(msg)
             raise Exception(msg)
 
@@ -145,7 +145,7 @@ class SourceIndexerBase:
             msg = 'NO IDENTIFIERS DEFINED FOR THE INDEX TYPES IN THE ROOT INDEX CONFIG\n\nthe following index types are defined\n' \
                   '{0}'.format(index_types) + \
                   '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) + \
-                  'Check your root config file at: {0}'.format(root_config.path)
+                  'Check your root config file at: {0}'.format(root_config_file.path)
             logging.error(msg)
             raise Exception(msg)
 

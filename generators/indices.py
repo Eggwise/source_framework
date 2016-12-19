@@ -64,7 +64,6 @@ def file_index(output_path='HERE', output_folder=None, ):
     result = _generate_file_index(output_folder, name, identifier)
 
 
-
 def _generate_file_index(output_folder, name, identifier):
     # config = fm.config  # type: Folder
     # file_index_template = config.templates.get_file('root.file.index.template')

@@ -9,12 +9,10 @@ from ..models.indexer import Index, Indexed, Indices, Printable
 from ..models.components import IndexedFile, SourceFile, IndexedItem, Source, SourceComponentContainer, Project, \
     IndexedSourceComponent
 from ..utils.utils import find_dirs, merge, LOG_CONSTANTS
-
-
+from ..utils import framework_manager
 
 
 class SourceIndexerBase:
-
     CALLER_DIR = None
 
     @classmethod
@@ -25,13 +23,10 @@ class SourceIndexerBase:
         logging.info('PREPARE SOURCE INDEXER')
         logging.info('-------------------------')
         logging.info('Source indexer initialized from script at: >> {0} <<'.format(caller_path))
-        logging.info('The following dir will be used to seach the root config from: >> {0} <<'.format(caller_dir))
+        logging.info('The following dir will be used to search the root config from: >> {0} <<'.format(caller_dir))
 
-
-        cls.CALLER_DIR = caller_dir
+        SourceIndexerBase.CALLER_DIR = caller_dir
         return cls
-
-
 
     _config = {
         # root config for identifying the root config file in the workspace
@@ -42,7 +37,24 @@ class SourceIndexerBase:
         'root_config_folder': '{home}/.source_framework'
     }
 
+    @classmethod
+    def _search_root_config(cls, start_path):
+        config_identifier = cls._config['config']['identifier']
+        root_config_name = 'root'
+        root_config_identifier = root_config_name + config_identifier
 
+        root_dir_search = find_dirs(start_path, root_config_identifier)
+        if len(root_dir_search) == 0:
+            error_message = '\n--------------\nNO ROOT CONFIG\nCould not find root config file\nSearched upwards from {0} \n'.format(
+                start_path) + \
+                            '--------------\nIf this is a new project, use the generator to generate the neccesary root and base config files' \
+                            '\n\nsourceframework.generate.new_project()'
+            logging.error(error_message)
+            raise Exception(error_message)
+        root_config_path = root_dir_search[0]
+
+        logging.info('Root config found at: {0}'.format(root_config_path))
+        return root_config_path
 
     @classmethod
     def _get_root_config_path(cls):
@@ -50,20 +62,7 @@ class SourceIndexerBase:
         logging.info('Walking up from the dir: {0}'.format(cls.CALLER_DIR))
         indexer_location = cls.CALLER_DIR
 
-        config_identifier = cls._config['config']['identifier']
-        root_config_name = 'root'
-        root_config_identifier = root_config_name + config_identifier
-
-        root_dir_search = find_dirs(indexer_location, root_config_identifier)
-        if len(root_dir_search) == 0:
-            error_message = '\n--------------\nNO ROOT CONFIG\nCould not find root config file\nSearched upwards from {0} \n'.format(indexer_location) + \
-                '--------------\nIf this is a new project, use the generator to generate the neccesary root and base config files' \
-                '\n\nsourceframework.generate.new_project()'
-            logging.error(error_message)
-            raise Exception(error_message)
-        root_config_path = root_dir_search[0]
-
-        logging.info('Root config found at: {0}'.format(root_config_path))
+        root_config_path = cls._search_root_config(indexer_location)
         return root_config_path
 
     @classmethod
@@ -74,13 +73,12 @@ class SourceIndexerBase:
     def _get_root_config(cls):
         logging.info('Getting the root config..')
         root_config_path = cls._get_root_config_path()
-        #extract the name from the root config
-        #using the hardcoded index described in the config attribute of the class
-
+        # extract the name from the root config
+        # using the hardcoded index described in the config attribute of the class
 
         root_config_name = SourceFile.extract_name(root_config_path, cls._config['config']['identifier'])
 
-        #if ever this assertion fails... something is terribly wrong
+        # if ever this assertion fails... something is terribly wrong
         assert root_config_name == 'root'
         return SourceFile(root_config_name, root_config_path)
 
@@ -109,8 +107,18 @@ class SourceIndexerBase:
         # get identifiers
 
         logging.info('------------------')
-        root_config = cls._get_root_config()
-        root_index_config = root_config.yaml['index']
+        root_config_file = cls._get_root_config()
+
+        base_config_file = cls._get_or_create_base_config()
+        root_config = merge( base_config_file.yaml, root_config_file.yaml)
+
+
+
+        if 'index' not in root_config:
+            msg = 'Error: missing index configuration in root config.\ncheck the config at: {0}'.format(root_config_file.path) + '\nOr the base config at: {0}'.format(base_config_file.path)
+            raise Exception(msg)
+
+        root_index_config = root_config['index']
 
         if 'identifiers' not in root_index_config:
             msg = 'MISSING IDENTIFIERS FOR INDICES TYPES IN ROOT INDEX CONFIG\n turn on logging to see more..'
@@ -121,7 +129,6 @@ class SourceIndexerBase:
         # flip
         identifiers_with_types = {v: k for k, v in types_with_identifiers}
 
-
         # get identifier list
         identifiers = [v for k, v in root_index_config['identifiers'].items()]
         index_types = root_index_config['types']
@@ -129,16 +136,16 @@ class SourceIndexerBase:
         if len(identifiers) > len(index_types):
             msg = 'NO INDEX TYPES DEFINED FOR THE IDENTIFIERS IN THE ROOT INDEX CONFIG\n\nthe following index types are defined\n' \
                   '{0}'.format(index_types) + \
-                '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) +\
-                'Check your root config file at: {0}'.format(root_config.path)
+                  '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) + \
+                  'Check your root config file at: {0}'.format(root_config.path)
             logging.error(msg)
             raise Exception(msg)
 
         if len(identifiers) < len(index_types):
             msg = 'NO IDENTIFIERS DEFINED FOR THE INDEX TYPES IN THE ROOT INDEX CONFIG\n\nthe following index types are defined\n' \
                   '{0}'.format(index_types) + \
-                '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) +\
-                'Check your root config file at: {0}'.format(root_config.path)
+                  '\nthe following identifiers are defined: {0}\n'.format(root_index_config['identifiers'].items()) + \
+                  'Check your root config file at: {0}'.format(root_config.path)
             logging.error(msg)
             raise Exception(msg)
 
@@ -166,18 +173,19 @@ class SourceIndexerBase:
         base_index_configs = {i.index_type: i for i in indices if i.name == 'root'}
 
         if len(base_index_configs) != len(index_types):
-            msg = 'MISSING BASE CONFIG FILES FOR {0}\n'.format([i for i in index_types if i not in base_index_configs]) +\
+            msg = 'MISSING BASE CONFIG FILES FOR {0}\n'.format(
+                [i for i in index_types if i not in base_index_configs]) + \
                   'Make sure you have a base index config named root somewhere in your workspace\n' \
                   'Root index config files are needed to inherit from in your custom index files\n' \
-                  'You need the following root config files:\n{0}'.format('\n'.join(['root{0}'.format(i) for i in identifiers]))
+                  'You need the following root config files:\n{0}'.format(
+                      '\n'.join(['root{0}'.format(i) for i in identifiers]))
             logging.error(msg)
             raise Exception(msg)
 
-
         child_indices = [i for i in indices if i.name != 'root']
 
-        logging.info('Found the base index config files:\n{0}'.format('\n'.join([i._print for i in indices if i.name == 'root'])))
-
+        logging.info('Found the base index config files:\n{0}'.format(
+            '\n'.join([i._print for i in indices if i.name == 'root'])))
 
         if len(child_indices) == 0:
             msg = 'NO INDEX CONFIG FILES FOUND!\n' \
@@ -191,27 +199,24 @@ class SourceIndexerBase:
         logging.info('Merging the configs..')
         logging.info('------------------')
 
-
-
         child_indices = [i for i in indices if i.name != 'root']
         merged_indices = []
         for index in child_indices:
             parent_config = base_index_configs[index.index_type]
 
-            #TODO
+            # TODO
             merged_config_dict = merge(parent_config.config, index.config)
-            merged_index_config = SourceFile(name=index.name, path=index.config_file.path, source=Source.from_yaml(merged_config_dict))
+            merged_index_config = SourceFile(name=index.name, path=index.config_file.path,
+                                             source=Source.from_yaml(merged_config_dict))
 
             index = Index(name=index.name, index_type=index.index_type, config_file=merged_index_config)
             merged_indices.append(index)
 
-
         logging.info('\n--------------\nGET INDICES COMPLETE\n--------------')
         return Indices(merged_indices)
 
-
     @classmethod
-    def _get_index_paths(cls, indices: Indices, with_ignore=True):
+    def _get_index_paths(cls, indices: Indices):
 
         ignore_indices = [i for i in indices if i.index_type == 'ignore']
         for i in ignore_indices:
@@ -233,9 +238,7 @@ class SourceIndexerBase:
         # indices = []
         indexed_paths = cls._get_paths_by_identifiers(list(identifiers_with_indices.keys()))
 
-
-
-        #GET FILE PATHS
+        # GET FILE PATHS
 
         identifiers_with_indices = {}
         assert all(list(map(lambda x: x.index_type == 'file', indices)))
@@ -262,12 +265,65 @@ class SourceIndexerBase:
         # indices = []
         indexed_paths = cls._get_paths_by_identifiers(list(identifiers_with_indices.keys()))
 
+    @classmethod
+    def index_all(cls, indexer) -> Indexed:
+        raise NotImplemented
 
+
+    @classmethod
+    def _get_base_folder_path(cls):
+        config_folder_args = {
+
+        }
+        logging.info('Project indexer: find root config')
+        home_folder = pathlib.Path.home()
+        config_folder_args['home'] = str(home_folder)
+
+        root_config_folder = cls._config['root_config_folder']
+        root_config_folder_path = root_config_folder.format(**config_folder_args)
+        return root_config_folder_path
+
+    @classmethod
+    def _get_or_create_base_config(cls):
+
+        root_config_folder_path = cls._get_base_folder_path()
+
+        if not os.path.exists(root_config_folder_path):
+            try:
+                os.mkdir(root_config_folder_path)
+            except Exception as e:
+
+                logging.error('ERROR creating root config folder')
+                raise e
+
+                # place root config file in folder
+
+        root_config_name = cls._config['root_config_name']
+        root_config_file_path = os.path.join(root_config_folder_path, root_config_name)
+
+        if not os.path.exists(root_config_file_path):
+            logging.info('Root file not found at{0}'.format(root_config_file_path))
+            root_config_source = cls._generate_base_config()
+            logging.info('Root file generated')
+            root_config_file = root_config_source.to_file(path=root_config_file_path)
+            root_config_file.do.save()
+        else:
+            root_config_file = SourceFile.from_path(root_config_file_path)
+
+        return root_config_file
+
+
+    @staticmethod
+    def _generate_base_config():
+
+        base_config = framework_manager.config.base.get_file('base.config').yaml
+
+        return Source.from_yaml(base_config)
+class FileIndexer(SourceIndexerBase):
     @classmethod
     def _index_files(cls, indices: Indices):
         identifiers_with_indices = {}
         assert all(list(map(lambda x: x.index_type == 'file', indices)))
-
 
         ## for now just do the file types and get the items from the files later
         file_indices = [i for i in indices if i.index_type == 'file']
@@ -304,10 +360,29 @@ class SourceIndexerBase:
 
         return Indexed(files)
 
+    @property
+    def files(self):
+        def filter_func(comp):
+            if isinstance(comp, IndexedSourceComponent):
+                return comp.index.index_type == 'file'
+            else:
+                return False
 
-class ItemIndexer(SourceIndexerBase):
+        return self.filter(filter_func)
+
+    @classmethod
+    def index_all(cls, indexer):
+        file_indices = indexer.indices.file.ok
+        file_indices.log()
+
+        all_indexed_files = indexer._index_files(file_indices)
+        all_indexed_files.log()
+        return all_indexed_files
 
 
+class ItemIndexer(FileIndexer):
+    def index_all(self):
+        indexed_files = self.files
 
     @staticmethod
     def parse_identifier_arguments(identifier_arguments, identifier_string, start=True):
@@ -405,11 +480,12 @@ class ItemIndexer(SourceIndexerBase):
             try:
                 end_regex = end_match_regex.format(**match_props)
             except Exception:
-                error_message = 'could not format the end tag using the named tags in the start identifier\n'\
-                'Tried to format the string: {0} using the available arguments: {1}\n'.format(end_match_regex, match_props) \
-                + 'If you dont want to use a end identifier leave the end attribute empty in ' \
-                        'the identifier options in your index config \nthe standard end identifier in the '\
-                'root item index config will be used.. normally matching 1 or more whitespaces ( {ws}+ )'
+                error_message = 'could not format the end tag using the named tags in the start identifier\n' \
+                                'Tried to format the string: {0} using the available arguments: {1}\n'.format(
+                    end_match_regex, match_props) \
+                                + 'If you dont want to use a end identifier leave the end attribute empty in ' \
+                                  'the identifier options in your index config \nthe standard end identifier in the ' \
+                                  'root item index config will be used.. normally matching 1 or more whitespaces ( {ws}+ )'
 
                 logging.error(error_message)
                 raise Exception(error_message)
@@ -425,7 +501,8 @@ class ItemIndexer(SourceIndexerBase):
                     break
             if line_end is None:
                 # No end tag found for dependency section
-                error_message = 'Could not find end of item with match props: {0}\nstart regex: {1}\nend regex: {2}'.format(match_props, start_match_regex, end_regex)
+                error_message = 'Could not find end of item with match props: {0}\nstart regex: {1}\nend regex: {2}'.format(
+                    match_props, start_match_regex, end_regex)
                 logging.error(error_message)
 
                 raise Exception(error_message)
@@ -433,7 +510,7 @@ class ItemIndexer(SourceIndexerBase):
             if 'name' not in match_props:
                 error_message = 'a name must be defined for an item index\n' \
                                 'include the name tag {name} somewhere in the start identifier string for matching' \
-                                'available variables {0}'.format(match_props) +\
+                                'available variables {0}'.format(match_props) + \
                                 'NOTE: the tags in the start identifier are available in the end identifier'
                 logging.error(error_message)
                 raise AttributeError(error_message)
@@ -446,60 +523,15 @@ class ItemIndexer(SourceIndexerBase):
 
         return items
 
+
 class ProjectIndexer(SourceIndexerBase):
 
 
-    @staticmethod
-    def _generate_base_config():
-        root_config = {
-            'name': 'base'
-        }
-        return Source.from_yaml(root_config)
-    @classmethod
-    def _get_base_folder_path(cls):
-        config_folder_args = {
-
-        }
-        logging.info('Project indexer: find root config')
-        home_folder = pathlib.Path.home()
-        config_folder_args['home'] = str(home_folder)
-
-        root_config_folder = cls._config['root_config_folder']
-        root_config_folder_path = root_config_folder.format(**config_folder_args)
-        return root_config_folder_path
-
-    # TODO Test
-    @classmethod
-    def _find_or_create_base_config(cls):
-
-        root_config_folder_path = cls._get_base_folder_path()
-
-        if not os.path.exists(root_config_folder_path):
-            try:
-                os.mkdir(root_config_folder_path)
-            except Exception as e:
-
-                logging.error('ERROR creating root config folder')
-                raise e
-
-            # place root config file in folder
-
-        root_config_name = cls._config['root_config_name']
-        root_config_file_path = os.path.join(root_config_folder_path, root_config_name)
-
-
-        if not os.path.exists(root_config_file_path):
-            logging.info('Root file not found at{0}'.format(root_config_file_path))
-            root_config_source = cls._generate_base_config()
-            logging.info('Root file generated')
-            root_config_file = root_config_source.to_file(path=root_config_file_path)
-            root_config_file.do.save()
-
-        return Project.from_path(root_config_file_path)
-
     @classmethod
     def _index_projects(cls):
-        base_config = cls._find_or_create_base_config()
+        base_config_file = cls._get_or_create_base_config()
+
+        base_config = Project.from_path(base_config_file.path)
         project_config = Project(cls._get_root_config())
 
         project_paths = []
@@ -514,32 +546,27 @@ class ProjectIndexer(SourceIndexerBase):
             unique_projects.append(p)
         return Indexed(unique_projects)
 
+    @classmethod
+    def index_all(cls, indexer):
+        return cls._index_projects()
 
 
 # @pretty_print
-class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContainer):
-
+class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentContainer):
     TIMES_INDEXED = 0
 
     _all_indexed = None
 
-    def __init__(self, indices: Indices=None, scoped: Indexed = None, index_all=True):
+    def __init__(self, indices: Indices = None, scoped: Indexed = None, index_all=True):
         self.indices = indices or self._get_indices()
         if index_all:
             SourceIndexer._all_indexed = self._index_all()
 
-        # if scoped is not None:
-        #     self.scoped = Indexed(scoped)
-        # else:
-        #     self.scoped = Indexed(self.all_indexed)
-
-        self.scoped = scoped or self.all_indexed
+        self.scoped = scoped or SourceIndexer._all_indexed
         self.current = 0
 
     def __getattr__(self, name):
         return self.filter(lambda x: x.match(name))
-
-
 
     def __getitem__(self, item):
         if isinstance(item, slice):
@@ -549,22 +576,19 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
         logging.debug('get item {0} from source indexer, passing it to the scoped indexed components'.format(item))
         return self.scoped[item]
 
-
     @property
     def copy(self):
         return SourceIndexer(indices=Indices(self.indices.scoped), scoped=Indexed(self.scoped), index_all=False)
 
-    @property
-    def all_indexed(self):
-        return SourceIndexer._all_indexed
 
     def _index_all(self):
-        SourceIndexer.TIMES_INDEXED += 1
 
-        if SourceIndexer.TIMES_INDEXED > 1:
-            error_message = 'indexing all the source for the second time, why???'
-            logging.error(error_message)
-            raise Exception(error_message)
+        def check_second_time():
+            SourceIndexer.TIMES_INDEXED += 1
+            if SourceIndexer.TIMES_INDEXED > 1:
+                error_message = 'indexing all the source for the second time, why???'
+                logging.error(error_message)
+                raise Exception(error_message)
 
         logging.info(LOG_CONSTANTS.REGION.format('INDEXING ALL SOURCE'))
         # self.indices.refresh()
@@ -576,69 +600,47 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
             logging.info('------\nskip item indexing.')
             item_indices = None
 
-        file_indices = self.indices.file.ok
+        all_indexed_files = FileIndexer.index_all(self)
 
-        file_indices.log()
-
-        all_indexed_files = self._index_files(file_indices)
-        all_indexed_files.log()
-
-        #TODO
+        # TODO
         all_indexed_items = []
         if item_indices is not None:
             for file in all_indexed_files:
                 indexed_items = self._extract_items(file, item_indices)
                 all_indexed_items.extend(indexed_items)
 
-
         # index projects
-        indexed_projects = self._index_projects()
-
+        indexed_projects = ProjectIndexer.index_all(self)
 
         all_indexed = Indexed(all_indexed_items, all_indexed_files, indexed_projects)
         logging.info(LOG_CONSTANTS.REGION.format('INDEXING END'))
         logging.info(
             'indexed {0} source components using {1} indices'.format(len(all_indexed), len(self.indices)))
 
-
-
         return all_indexed
-
-        # def _apply_filter(self, filter_func):
-        # self.scoped = list(filter(filter_func, self.scoped))
 
     @property
     def _print(self):
         return LOG_CONSTANTS.REGION_IDENTIFIER \
-        + LOG_CONSTANTS.REGION.format('SOUCE_INDEXER') \
-        + LOG_CONSTANTS.LINE.format('Amount of indices: {0}'.format(len(self.indices))) \
-        + LOG_CONSTANTS.LINE.format('Total amount of indexed source components: {0}'.format(len(self.all_indexed))) \
-        + LOG_CONSTANTS.LINE.format('source components in scope: {0}'.format(len(self.scoped))) \
-        + LOG_CONSTANTS.LINE.format(LOG_CONSTANTS.REGION.format('SOUCE_INDEXER END')) \
-        + LOG_CONSTANTS.REGION_IDENTIFIER
-
-
-
-
+               + LOG_CONSTANTS.REGION.format('SOUCE_INDEXER') \
+               + LOG_CONSTANTS.LINE.format('Amount of indices: {0}'.format(len(self.indices))) \
+               + LOG_CONSTANTS.LINE.format(
+            'Total amount of indexed source components: {0}'.format(len(self.all_indexed))) \
+               + LOG_CONSTANTS.LINE.format('source components in scope: {0}'.format(len(self.scoped))) \
+               + LOG_CONSTANTS.LINE.format(LOG_CONSTANTS.REGION.format('SOUCE_INDEXER END')) \
+               + LOG_CONSTANTS.REGION_IDENTIFIER
 
     def refresh(self):
         self.indices.refresh()
         self.scoped = self.all_indexed
         return self
 
-
-    # def get(self, one=True):
-    #     logging.info('get call from source indexer, passing it to the scoped indexed components')
-    #     return self.scoped.get(one=one)
-
     @property
     def count(self):
         return len(self.scoped)
 
-
     def __len__(self):
         return len(self.scoped)
-
 
     def list(self):
         print(LOG_CONSTANTS.REGION.format('LIST INDEXED COMPONENTS'))
@@ -654,10 +656,10 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
     def at_path(self, path, temp_index=False, mutable=False):
 
         if temp_index:
-            #create index
-            #create indexed file
-            #index the items in this file
-            #add to scope
+            # create index
+            # create indexed file
+            # index the items in this file
+            # add to scope
             raise NotImplementedError
             pass
 
@@ -678,7 +680,6 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
 
         return return_val
 
-
     def by_path(self, path):
         return self.filter(lambda x: x.path == path)
 
@@ -689,18 +690,8 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
                 return comp.index.index_type == 'item'
             else:
                 return False
+
         return self.filter(filter_func)
-
-
-    @property
-    def files(self):
-        def filter_func(comp):
-            if isinstance(comp, IndexedSourceComponent):
-                return comp.index.index_type == 'file'
-            else:
-                return False
-        return self.filter(filter_func)
-
 
     @property
     def projects(self):
@@ -710,7 +701,6 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
     def components(self):
         return self.scoped.components
 
-
     @property
     def here(self):
         (frame, script_path, line_number,
@@ -719,13 +709,13 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
         return self.at_path(script_path)
 
     def at(self, *source_components):
-        #TODO file indexer at DIR
+        # TODO file indexer at DIR
 
         source_components = Indexed(*source_components)
         source_components_with_paths = []
         for c in source_components:
 
-            #for now compare with path, later check folder too
+            # for now compare with path, later check folder too
             for s in self.scoped:
                 if s.is_at(c):
                     if s not in source_components_with_paths:
@@ -735,11 +725,18 @@ class SourceIndexer(ItemIndexer,ProjectIndexer, Printable, SourceComponentContai
         return instance
 
     def extract_items(self, keep_scope=True):
-        #TODO TEST
+        # TODO TEST
         files = self.files.get(one=False)
         indices = self.indices.item.ok
 
         extracted_items = [self._extract_items(f, indices) for f in files]
         self.scoped = Indexed(extracted_items)
         return self
+
+    @staticmethod
+    def from_project(project: Project):
+        SourceIndexer.all_indexed = None
+        root_dir = project.config.folder.path
+        SourceIndexerBase.CALLER_DIR = root_dir
+        return SourceIndexer()
 

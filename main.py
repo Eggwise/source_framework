@@ -25,7 +25,6 @@ def init(path=None):
      function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
 
 
-
     if path is not None:
         _init_config['caller_path'] = os.path.realpath(path)
     else:

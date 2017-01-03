@@ -118,7 +118,7 @@ class IndexedSourceComponent(SourceComponent):
 
     @property
     def index(self):
-        return self._index;
+        return self._index
 
     @index.setter
     def index(self, index):
@@ -126,6 +126,26 @@ class IndexedSourceComponent(SourceComponent):
 
 
 class SourceComponentContainer():
+
+    def __repr__(self):
+        child_reprs = ''
+        if len(self.components) > 4:
+            for c in self.components:
+                child_reprs += '\t' + str(c) + ',\n'
+            child_reprs = child_reprs[:-1]
+            representation = '<{0}[\n{1}\n]>'.format(self.__class__.__name__, child_reprs)
+        else:
+            child_reprs = ','.join([str(c) for c in self.components])
+            representation = '<{0}[{1}]>'.format(self.__class__.__name__, child_reprs)
+        return representation
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            pass
+        if isinstance(item, int):
+            return self.components[item]
+
+        raise TypeError("indices doe not support indexing, could not get item: {0}".format(item))
 
     @property
     def components(self):

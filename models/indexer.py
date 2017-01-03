@@ -3,7 +3,6 @@ import logging, copy
 from ..utils.utils import LOG_CONSTANTS
 
 
-
 ROOT_IDENTIFIER = '.config'
 IGNORE_IDENTIFIER = 'ignore.index'
 PROJECT_IDENTIFIER = 'root.config'
@@ -112,8 +111,11 @@ class Index(Matchable, Printable):
         return getattr(self.config_file, attr)
 
 
+from .components import SourceComponentContainer, SourceComponent, IndexedSourceComponent
 
-class Indices(Printable):
+
+
+class Indices(Printable, SourceComponentContainer):
 
     def __iter__(self):
         return iter(self.scoped)
@@ -123,6 +125,7 @@ class Indices(Printable):
             indices = [indices]
         self._indices = indices
         self.scoped = indices
+
         if len(indices) == 0:
             raise Exception('Trying to make indices for empty index list')
         self.current = 0
@@ -146,7 +149,7 @@ class Indices(Printable):
         logging.info('Current indices: {0}'.format(self))
 
         if len(indices_of_type) == 0:
-            error_message = 'Index error: no index found of the same type: {0}'.format(index_type)
+            error_message = 'Index error: no index found with type: {0}'.format(index_type)
             logging.error(error_message)
 
             logging.error('available indices: {0}'.format([i.index_type for i in self]))
@@ -164,6 +167,9 @@ class Indices(Printable):
     def has(self, index_type):
         return len([1 for i in self._indices if i.index_type == index_type]) > 0
 
+    @property
+    def components(self):
+        return self._indices
 
     @property
     def _print(self):
@@ -186,6 +192,7 @@ class Indices(Printable):
         return self_to_return
 
 
+
     @property
     def all(self):
         all_indices_copy = copy.copy(self._indices)
@@ -195,15 +202,11 @@ class Indices(Printable):
         self.scoped = self._indices
 
 
-
     def types(self):
 
         # TODO make use of this
         return set([i.index_type for i in self])
 
-
-
-from .components import SourceComponentContainer, SourceComponent, IndexedSourceComponent
 
 
 class Indexed(Printable, SourceComponentContainer):

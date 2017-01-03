@@ -73,9 +73,15 @@ def current_project() -> Project:
 
 
 
+def enable_logging():
+    logging.basicConfig(level=1)
 
 
 
+def indexer():
+    _check_initialized()
+    global _source_indexer
+    return _source_indexer
 
 
 generate = generators

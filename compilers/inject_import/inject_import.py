@@ -4,7 +4,7 @@ import sys, io
 class InjectImport():
 
 
-    get_import_source_code_execution_template = '''import inspect
+    __import_source_code_execution_template = '''import inspect
 {import_statement}
 import_source_code = inspect.getsource({import_name})
 print(import_source_code)
@@ -19,6 +19,7 @@ print(import_source_code)
                 if 'as' in line:
                     import_name = line.split('as')[-1]
                 else:
+                    line = line.strip()
                     line += ' as {0}'.format(default_import_name)
                     import_name = default_import_name
 
@@ -31,7 +32,7 @@ print(import_source_code)
     def _get_import_sourcecode(cls, import_statement, import_name):
 
         template_args = dict(import_statement=import_statement, import_name=import_name)
-        execution_source = cls.get_import_source_code_execution_template.format(**template_args)
+        execution_source = cls.__import_source_code_execution_template.format(**template_args)
 
 
         print('EXECUTING IMPORT STATEMENT {0}'.format(import_statement))

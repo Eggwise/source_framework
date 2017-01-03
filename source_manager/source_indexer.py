@@ -507,13 +507,15 @@ class ItemIndexer(FileIndexer):
 
                 raise Exception(error_message)
 
+            # TODO cleanup
             if 'name' not in match_props:
-                error_message = 'a name must be defined for an item index\n' \
-                                'include the name tag {name} somewhere in the start identifier string for matching' \
-                                'available variables {0}'.format(match_props) + \
-                                'NOTE: the tags in the start identifier are available in the end identifier'
-                logging.error(error_message)
-                raise AttributeError(error_message)
+                # error_message = 'a name must be defined for an item index\n' \
+                #                 'include the name tag {name} somewhere in the start identifier string for matching' \
+                #                 'available variables {0}'.format(match_props) + \
+                #                 'NOTE: the tags in the start identifier are available in the end identifier'
+                # logging.error(error_message)
+                match_props['name'] = '_'
+                # raise AttributeError(error_message)
 
             name = match_props['name']
             del (match_props['name'])
@@ -565,9 +567,7 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
         self.scoped = scoped or SourceIndexer._all_indexed
         self.current = 0
 
-    def __repr__(self):
-        representation = '<SourceIndexer [{0}]>'.format(','.join([str(i) for i in self]))
-        return representation
+
 
     def __getattr__(self, name):
         return self.filter(lambda x: x.match(name))
@@ -579,6 +579,17 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
 
         logging.debug('get item {0} from source indexer, passing it to the scoped indexed components'.format(item))
         return self.scoped[item]
+
+    def __add__(self, other):
+
+        if isinstance(other, SourceFile):
+            extracted_items = self._extract_items(other, indices=self.indices)
+            self.components.extend(extracted_items)
+
+        return self
+
+
+
 
     @property
     def copy(self):

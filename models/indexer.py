@@ -211,9 +211,6 @@ class Indices(Printable, SourceComponentContainer):
 
 class Indexed(Printable, SourceComponentContainer):
 
-    def __iter__(self):
-        self.current = 0
-        return iter(self.scoped)
 
 
     @classmethod
@@ -299,14 +296,7 @@ class Indexed(Printable, SourceComponentContainer):
         return self.map(mutable=True, map_func=lambda x: x.__call__(*args, **kwargs))
 
 
-    def __len__(self):
-        return len(self.scoped)
 
-    def __next__(self):
-        self.current += 1
-        if self.current > len(self):
-            raise StopIteration
-        return self.scoped[self.current]
 
 
 

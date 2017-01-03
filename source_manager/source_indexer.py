@@ -583,7 +583,7 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
     def __add__(self, other):
 
         if isinstance(other, SourceFile):
-            extracted_items = self._extract_items(other, indices=self.indices)
+            extracted_items = self._extract_items(other, indices=self.indices.item)
             self.components.extend(extracted_items)
 
         return self

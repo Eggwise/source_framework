@@ -147,6 +147,19 @@ class SourceComponentContainer():
 
         raise TypeError("indices doe not support indexing, could not get item: {0}".format(item))
 
+    def __iter__(self):
+        self.current = 0
+        return iter(self.scoped)
+
+    def __len__(self):
+        return len(self.scoped)
+
+    def __next__(self):
+        self.current += 1
+        if self.current > len(self):
+            raise StopIteration
+        return self.scoped[self.current]
+
     @property
     def components(self):
         raise NotImplementedError
@@ -224,6 +237,8 @@ class SourceComponentContainer():
 class Source(str, Printable):
 
     def __init__(self, source):
+        if isinstance(source, Source):
+            source = source.source
         self._source = source
         self._current_line = 0
 
@@ -348,6 +363,7 @@ class Source(str, Printable):
 
 
         return SourceFile(name, path, source=self)
+
 
 
 #TODO WIP
@@ -565,9 +581,10 @@ class IndexedFile(SourceFile, IndexedSourceComponent):
         return cls(file.name, file.path, index)
 
 
+
 class IndexedItem(IndexedSourceComponent):
 
-    def __init__(self, name: str, indexed_file: IndexedFile, line_start: int, line_end: int, index, properties: dict = None):
+    def __init__(self, name: str, indexed_file: IndexedFile, line_start: int, line_end: int, index , properties: dict = None):
         self.line_start = line_start
         self.line_end = line_end
         self.name = name
@@ -578,6 +595,7 @@ class IndexedItem(IndexedSourceComponent):
                 setattr(self, k, v)
         self.index = index
 
+
     def __eq__(self, other):
         return self.name == other.name and self.index == other.index
 
@@ -587,6 +605,9 @@ class IndexedItem(IndexedSourceComponent):
 
     def __repr__(self):
         return self._print
+
+
+
     @property
     def _print(self):
         return '<Indexed item: {0} between lines {1} and {2} in file: {3}>'.format(self.name, self.line_start, self.line_end, self.filename)

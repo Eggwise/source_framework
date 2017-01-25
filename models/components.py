@@ -59,7 +59,6 @@ class SourceComponent(Printable, Matchable, Unique):
         parent, filename = os.path.split(path)
         name_match = re.match(extract_regex, filename)
 
-
         try:
             assert name_match is not None
             assert 'name' in name_match.groupdict()

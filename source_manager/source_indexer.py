@@ -189,7 +189,8 @@ class SourceIndexerBase:
 
         if len(child_indices) == 0:
             msg = 'NO INDEX CONFIG FILES FOUND!\n' \
-                  'Have you created any?\nturn on logging INFO to see exactly what happens'
+                  'Have you created any?\nto create a new index use: source_framework.generate.file_index()\n' \
+                  'To enable logging, use source_framework.enable_logging()'
             logging.error(msg)
             raise Exception(msg)
 

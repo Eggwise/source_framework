@@ -7,8 +7,7 @@ from ..models.components import Folder, Source
 from .utils import parse_destination
 
 
-
-def _ask_input(name, message=None, validation_func = None):
+def _ask_input(name, message=None, validation_func=None):
     if message is not None:
         print(message)
     user_input = input()
@@ -26,6 +25,7 @@ def _ask_input(name, message=None, validation_func = None):
 
 def _ask_index_name():
     message = 'enter name for the index'
+
     def validate(user_input):
         valid_input = True
         if ' ' in user_input:
@@ -41,8 +41,10 @@ def _ask_index_name():
 
     pass
 
+
 def _ask_file_index_identifier():
     message = 'enter the identifier.\nfiles with a filename ending with this identifier will get indexed by this index.'
+
     def validate(user_input):
         valid_input = True
         if ' ' in user_input:
@@ -55,6 +57,7 @@ def _ask_file_index_identifier():
 
     identifier = _ask_input('identifier', message, validate)
     return identifier
+
 
 def file_index(output_path='HERE', output_folder=None, ):
     output_folder = parse_destination(inspect.currentframe(), output_path, output_folder)
@@ -79,3 +82,29 @@ def _generate_file_index(output_folder, name, identifier):
 
     return True
 
+
+def item_index(output_path='HERE', output_folder=None):
+    output_folder = parse_destination(inspect.currentframe(), output_path, output_folder)
+    name = _ask_index_name()
+
+    print('Enter the start identifier')
+    start_identifier = input()
+
+    print('Enter the end identifier, or press enter to use default (defined in the base item index config file)')
+    end_identifier = input()
+
+    identifier_config = {
+        'start': start_identifier
+    }
+
+    if len(end_identifier) != 0:
+        identifier_config['end'] = end_identifier
+
+    file_name = name + '.item.index'
+    index_config = dict(identifier=identifier_config)
+    index_config_source = Source.from_yaml(index_config)
+
+    index_file = index_config_source.to_file(folder=output_folder, filename=file_name)
+    index_file.do.save()
+    print('Item index file saved to: {0}'.format(index_file.path))
+    return

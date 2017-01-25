@@ -92,7 +92,7 @@ print(import_source_code)
         module_path = execution_output[0]
         import_source = execution_output[1:]
 
-        return import_source, module_path
+        return Source(import_source), module_path
 
 
     @classmethod
@@ -122,8 +122,11 @@ print(import_source_code)
         unique_imports = list(set(extracted_imports))
         all_imports = []
         for i_name, i_statement in unique_imports:
-            all_imports.append(cls._get_import(i_name, i_statement))
+            import_source, module_path = cls._get_import(i_name, i_statement)
+            all_imports.append(import_source)
         return all_imports
+
+
 
     @staticmethod
     def _capture_execution(source_code):

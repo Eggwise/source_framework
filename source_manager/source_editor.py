@@ -1,6 +1,7 @@
 from .source_indexer import SourceIndexer
 from ..models.components import IndexedItem
 from ..models.indexer import Index
+from ..main import indexer
 
 class EditorBase():
     pass
@@ -8,6 +9,7 @@ class EditorBase():
 class FileEditor(EditorBase):
 
     def __init__(self, file, indexed):
+
         if isinstance(indexed, SourceIndexer):
             self.indexer = indexed
         else:
@@ -18,7 +20,6 @@ class FileEditor(EditorBase):
     @property
     def items(self):
         return self.indexer.items.at(self.file)
-
 
     def split(self):
 
@@ -44,6 +45,7 @@ class FileEditor(EditorBase):
         return list(sorted(all_items, key=lambda x: x.line_start))
 
 
-
     def __getattr__(self, item):
         self.items.filter(item)
+
+

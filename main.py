@@ -4,15 +4,16 @@ import logging, os
 from source_framework.models.components import Project
 from source_framework.models.indexer import Indexed
 from .source_manager.source_indexer import SourceIndexer
-from .source_manager.source_editor import FileEditor
 from . import generators
+from contextlib import contextmanager
 
 _init_config = {
 
-    'caller_path' : None
+    'caller_path': None
 }
 
 _source_indexer = None
+
 
 def init(path=None):
     global _init_config
@@ -25,7 +26,6 @@ def init(path=None):
     (frame, script_path, line_number,
      function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
 
-
     if path is not None:
         _init_config['caller_path'] = os.path.realpath(path)
     else:
@@ -33,9 +33,6 @@ def init(path=None):
 
     SourceIndexer.prepare(_init_config)
     _source_indexer = SourceIndexer()
-
-
-
 
 
 def _check_initialized():
@@ -46,7 +43,6 @@ def _check_initialized():
         error_message = 'something went wrong when initializing the source manager. did you call init()?'
         logging.error(error_message)
         raise Exception(error_message)
-
 
 
 def find():
@@ -64,7 +60,6 @@ def from_this():
     return indexer.at_path(script_path)
 
 
-
 def current_project() -> Project:
     source_indexer = find()
     root_config = _source_indexer._get_root_config()
@@ -72,10 +67,8 @@ def current_project() -> Project:
     return source_indexer.projects.by_path(root_config.path).one
 
 
-
 def enable_logging():
     logging.basicConfig(level=1)
-
 
 
 def indexer():
@@ -84,5 +77,12 @@ def indexer():
     return _source_indexer
 
 
-generate = generators
+@contextmanager
+def edit(file, indexed = None):
+    from .source_manager.source_editor import FileEditor
+    if indexed is None:
+        indexed = indexer()
 
+    yield FileEditor(file, indexed)
+
+generate = generators

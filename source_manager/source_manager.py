@@ -110,3 +110,5 @@ class FileManager(SourceManagerBase):
 
         self._file._source = source
         return self
+
+

@@ -61,7 +61,7 @@ print(import_source_code)
 
         #multiple imports in one line
         if ',' in import_names:
-            import_names = import_names.split(',')[1:]
+            import_names = import_names.split(',')
             import_names = list(map(lambda x: x.strip(), import_names))
             imports = []
             for import_name in import_names:
@@ -84,7 +84,7 @@ print(import_source_code)
         template_args = dict(import_statement=import_statement, import_name=import_name)
         execution_source = cls.__import_source_code_execution_template.format(**template_args)
 
-        print('EXECUTING IMPORT STATEMENT {0}'.format(import_statement))
+        # print('EXECUTING IMPORT STATEMENT {0}'.format(import_statement))
 
         execution_output = cls._capture_execution(execution_source)
         execution_output = Source(execution_output)
@@ -95,10 +95,11 @@ print(import_source_code)
         return Source(import_source), module_path
 
 
+
     @classmethod
     def get_imports(cls, source_components):
 
-        if isinstance(source_components, Source) or isinstance(source_components, SourceFile):
+        if isinstance(source_components, Source) or isinstance(source_components, SourceFile) or isinstance(source_components, IndexedItem):
             source_components = [source_components]
         extracted_imports = []
         for sc in source_components:
@@ -119,7 +120,9 @@ print(import_source_code)
             except Exception as e:
                 raise(e)
 
-        unique_imports = list(set(extracted_imports))
+        # unique_imports = list(set(extracted_imports))
+
+        unique_imports = extracted_imports
         all_imports = []
         for i_name, i_statement in unique_imports:
             import_source, module_path = cls._get_import(i_name, i_statement)

@@ -589,8 +589,10 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
 
         return self
 
-
-
+    @property
+    def file(self):
+        #NEW API
+        return self.files.one
 
     @property
     def copy(self):
@@ -622,6 +624,9 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
         all_indexed_items = []
         if item_indices is not None:
             for file in all_indexed_files:
+
+                logging.info('Extracting items from: {0}'.format(file))
+
                 indexed_items = self._extract_items(file, item_indices)
                 all_indexed_items.extend(indexed_items)
 
@@ -756,8 +761,8 @@ class SourceIndexer(ItemIndexer, ProjectIndexer, Printable, SourceComponentConta
         SourceIndexerBase.CALLER_DIR = root_dir
         return SourceIndexer()
 
-
     @staticmethod
     def from_components(source_components):
         indexer = SourceIndexer(scoped=source_components, index_all=False)
         return indexer
+

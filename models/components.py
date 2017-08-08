@@ -508,6 +508,7 @@ class SourceFile(SourceComponent):
         return Source(self._source)
 
 
+
     # @property
     # def compile(self):
     #     return source_manager.compiler(self)
@@ -578,6 +579,7 @@ class IndexedFile(SourceFile, IndexedSourceComponent):
     @classmethod
     def from_source_file(cls, file: SourceFile, index):
         return cls(file.name, file.path, index)
+
 
 
 

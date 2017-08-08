@@ -297,9 +297,6 @@ class Indexed(Printable, SourceComponentContainer):
 
 
 
-
-
-
     @property
     def copy(self):
         return Indexed(self.scoped)
@@ -338,12 +335,6 @@ class Indexed(Printable, SourceComponentContainer):
 
         return self.scoped
 
-
-
-
-
-
-
     @property
     def _print(self):
         children_prints = '\n'.join([i._print for i in self])
@@ -357,6 +348,7 @@ class Indexed(Printable, SourceComponentContainer):
                         + LOG_CONSTANTS.REGION.format('INDEXED COMPONENTS END') \
                         + '\n\n'
         return print_string
+
 
 
 

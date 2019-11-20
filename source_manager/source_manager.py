@@ -40,8 +40,6 @@ class SourceManagerBase():
             output_path = os.path.join(folder.path, name)
 
 
-
-
         #TODO more checks for existence of folder etc
 
         if os.path.exists(output_path) and not override:

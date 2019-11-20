@@ -159,6 +159,9 @@ class SourceComponentContainer():
             raise StopIteration
         return self.scoped[self.current]
 
+    def _get(self, attribute_name):
+        return getattr(self, attribute_name)
+
     @property
     def components(self):
         raise NotImplementedError
@@ -310,7 +313,7 @@ class Source(str, Printable):
 
     @classmethod
     def from_yaml(cls, yaml_object):
-        return cls(yaml.dump(yaml_object, default_flow_style=False))
+        return cls(yaml.dump(yaml_object, default_flow_style=False, width=2))
 
     #TODO TEST
     def to_file(self, path=None, name=None, folder=None, filename=None, source_file=None):
@@ -406,14 +409,19 @@ class Folder(SourceComponent):
         new_folder = Folder.from_path(os.path.join(self.path, *path))
         return new_folder
 
-    def get_folder(self, name):
-        items_starting_with = [i for i in self.dirs if i.name.startswith(name)]
-        if len(items_starting_with) > 1:
+    def get_folder(self, name, exact = False):
+
+        items = []
+        if exact:
+            items = [i for i in self.dirs if i.name == name]
+        else:
+            items = [i for i in self.dirs if i.name.startswith(name)]
+        if len(items) > 1:
             raise Exception('Error getting folder, multiple items with same name')
-        if len(items_starting_with) == 0:
+        if len(items) == 0:
             raise AttributeError('no items with found with name {0}'.format(name))
 
-        match_item = items_starting_with[0]
+        match_item = items[0]
         return match_item
 
     def get_file(self, name):

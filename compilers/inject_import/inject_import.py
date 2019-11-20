@@ -40,10 +40,11 @@ print(import_source_code)
         import_statement = import_statement.strip()
 
         if 'import ' not in import_statement:
-            # raise Exception('Not an import statement: {0}'.format(import_statement))
-            return []
+            raise Exception('Not an import statement: {0}'.format(import_statement))
 
-        if len(re.findall('=|#|if|[0-9]|\(\)', import_statement)) > 0:
+        #todo this is a hack for notification
+        if len(re.findall('=|#|if|[0-9]|\(\)', import_statement)) > 0 and 'Notification' not in import_statement:
+            print('JOO', import_statement)
             return []
 
         #one import with custom name
@@ -53,8 +54,6 @@ print(import_source_code)
             get_source_import_statement = import_statement
 
             return [(import_name, get_source_import_statement)]
-
-
 
         import_statement = import_statement.strip()
         import_names = import_statement.split('import ')[1]
@@ -118,7 +117,8 @@ print(import_source_code)
                     extracted_imports.extend(imports_from_line)
 
             except Exception as e:
-                raise(e)
+                print('Script compiler -> inject imports -> Exception', e)
+                raise e
 
         # unique_imports = list(set(extracted_imports))
 
